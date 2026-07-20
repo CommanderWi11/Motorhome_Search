@@ -25,8 +25,9 @@ convention already used by `Assets_HQ/BSA_Options`:
   (see below), renaming would need a live migration for zero benefit.
 - Original design docs (2026-05-11 plan + spec) preserved under
   `Resources/design-history/` — they only existed in the stale AI Coworking clone.
-- Old clone archived (not deleted) at
-  `AI Coworking/01_Personal_HQ/Projects/Assets_HQ/Camper_Lifestyle_ARCHIVED_2026-07-20/`.
+- Old clone archived at `Assets_HQ/Camper_Lifestyle_ARCHIVED_2026-07-20/`, then
+  permanently deleted the same night once Luis confirmed nothing more was needed
+  from it (everything of value was already merged in above).
 - **iCloud risk accepted knowingly:** this repo now lives inside iCloud Drive
   (AI Coworking is under `~/Library/Mobile Documents/com~apple~CloudDocs/`). iCloud can
   evict local files to cloud-only placeholders between runs, which could break the
@@ -45,6 +46,35 @@ the reliable signal of a true hang vs. a slow-but-working run. Killed the proces
 `weekly-search.sh` manually — the manual run completed cleanly (`2026-W30.done`
 written, board published, commit `63caf57` pushed) in well under the time the hung run
 had already burned.
+
+### Same-day fix: cross-source duplicate cards (commit a97152d)
+Luis spotted it directly: the same physical **Etrusco 7400SB** was on the board twice
+(`coches_net-0caa3cc4` week W29, `milanuncios-dcc75ac8` week W30) — same van, two ids,
+because ids are `md5(source+url)` and the same vehicle gets a fresh id on every site it's
+relisted on. The existing `fingerprint()` (exact token-set match) didn't catch it: one
+title tokenized "7400 SB" as two tokens, the other tokenized "7400SB" as one, and the
+descriptive words never overlapped at all ("garaje grande" vs "camas gemelas fijas").
+Root-caused, fixed, and merged the live duplicate the same night:
+- `_slug_tokens` now splits letter/digit runs so model codes match regardless of
+  spacing ("7400SB" -> "7400"+"sb", same as "7400 SB").
+- `_FP_STOPWORDS` expanded to drop base-chassis brands (fiat, ducato, ford, transit...)
+  and engine/sale-status words (jtd, td, reservada...) — these were the dominant
+  false-positive source (nearly every integral/perfilada shares a Fiat Ducato chassis,
+  so two *different* models were sharing 4-6 "identity" tokens before this).
+- New `harvest.same_vehicle(a, b)`: cross-source only (a dealer's own catalog can
+  legitimately carry two units of one model — same-source near-dupes are never merged)
+  plus a real token-overlap threshold, calibrated against the actual live dataset
+  (candidates.json + board) to confirm zero false positives before shipping.
+- `board.update_board()` now promotes into the existing card via `same_vehicle`, keeping
+  the original id (so Supabase stars/comments/discards stay attached correctly).
+- `apply_winners.py` now refuses to publish a week whose winners contain the same
+  vehicle twice from different sources (a research-pass bug, not two real vans).
+- Also: the dashboard's "✨ Nuevo" ribbon was purely session/visit-based (only showed
+  on listings added since your last browser visit) — now `added_at` within the current
+  top week always marks a card new, regardless of visit history or cleared localStorage.
+- 9 new tests in `tests/test_harvest.py`, `test_board.py`, `test_apply_winners.py`
+  pin down the real Etrusco case as a true positive and same-source/shared-chassis/
+  conflicting-year cases as false-positive guards.
 
 ## 2026-05-24 recall improvements
 Result: total dataset now ~5-6 motorhomes/run (vs. ~3 pre-pivot). Smaller gain than expected because Canary Islands market is genuinely thin.
