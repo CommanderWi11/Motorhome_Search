@@ -1,36 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
-  Camper Lifestyle — weekly Top 5. Mondays 07:00 local.
+  Motorhome Lifestyle — weekly Top 5. Mondays 07:00 local.
 
   Install:
-    ln -sf "/Users/openbob/Developer/Manual Search Script Run/launchd/com.openbob.camper-weekly.plist" ~/Library/LaunchAgents/
-    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.openbob.camper-weekly.plist
+    ln -sf "/Users/openbob/Library/Mobile Documents/com~apple~CloudDocs/AI Coworking/01_Personal_HQ/Projects/Motorhome_HQ/Motorhome_Search/launchd/com.openbob.motorhome-search-weekly.plist" ~/Library/LaunchAgents/
+    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.openbob.motorhome-search-weekly.plist
 
   Force a run now (does not wait for Monday):
-    launchctl kickstart -k gui/$(id -u)/com.openbob.camper-weekly
+    launchctl kickstart -k gui/$(id -u)/com.openbob.motorhome-search-weekly
 
   Watch it:
-    tail -f ~/Library/Logs/camper-weekly.log
+    tail -f ~/Library/Logs/motorhome-weekly.log
 
   Uninstall:
-    launchctl bootout gui/$(id -u)/com.openbob.camper-weekly
+    launchctl bootout gui/$(id -u)/com.openbob.motorhome-search-weekly
 
   Note: this runs on YOUR Mac on purpose. GitHub Actions cannot do this job — the
   listing sites block datacenter IPs, which is why the old weekly-search.yml never
   produced a single listing. The trade-off is that the Mac must be awake; if it is
   asleep at 07:00 launchd runs the job on next wake, and the idempotency marker in
   weekly-search.sh makes sure it still only runs once for that week.
+
+  2026-07-20: renamed from com.openbob.camper-weekly (Camper_Lifestyle repo) as part
+  of consolidating the project into AI Coworking as Motorhome_HQ/Motorhome_Search.
 -->
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>com.openbob.camper-weekly</string>
+  <string>com.openbob.motorhome-search-weekly</string>
 
   <key>ProgramArguments</key>
   <array>
     <string>/bin/bash</string>
-    <string>/Users/openbob/Developer/Manual Search Script Run/scripts/weekly-search.sh</string>
+    <string>/Users/openbob/Library/Mobile Documents/com~apple~CloudDocs/AI Coworking/01_Personal_HQ/Projects/Motorhome_HQ/Motorhome_Search/scripts/weekly-search.sh</string>
   </array>
 
   <!-- No WorkingDirectory: the script cd's itself. (Matches the convention set
@@ -40,7 +43,9 @@
     07:00 Monday is the real run. The two later slots are RETRIES, and they exist
     because Stage B can fail for reasons that have nothing to do with the code: a
     Claude session limit, a flaky site, no network on wake. (The very first launchd
-    run, on 2026-07-13, died exactly this way — on a session limit.)
+    run, on 2026-07-13, died exactly this way — on a session limit. The 2026-07-20
+    19:00 retry also hung with zero session activity and had to be killed and rerun
+    manually — see MEMORY.md.)
 
     weekly-search.sh only writes .state/<week>.done once it has actually published,
     so a successful 07:00 run makes 13:00 and 19:00 exit immediately as no-ops —
@@ -76,8 +81,8 @@
   <false/>
 
   <key>StandardOutPath</key>
-  <string>/Users/openbob/Library/Logs/camper-weekly.log</string>
+  <string>/Users/openbob/Library/Logs/motorhome-weekly.log</string>
   <key>StandardErrorPath</key>
-  <string>/Users/openbob/Library/Logs/camper-weekly.log</string>
+  <string>/Users/openbob/Library/Logs/motorhome-weekly.log</string>
 </dict>
 </plist>
