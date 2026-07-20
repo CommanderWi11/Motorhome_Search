@@ -12,7 +12,10 @@ for code, `AI Coworking/.../Assets_HQ/Camper_Lifestyle/` for planning docs only)
 one place. There is no other copy — don't recreate the split.
 
 - **GitHub repo:** `CommanderWi11/Motorhome_Search` (renamed 2026-07-20 from
-  `Camper_Lifestyle`; GitHub redirects the old URL for a while, but use the new one).
+  `Camper_Lifestyle`; git/API/web-UI access to the repo redirects automatically, but
+  **the old Pages URL does NOT** — `commanderwi11.github.io/Camper_Lifestyle/` 404s
+  immediately post-rename since the Pages subdomain is derived fresh from the current
+  repo name. Update any bookmark to the new URL below.).
 - **GitHub Pages serves `docs/` from `main`** (legacy mode, no Actions workflow).
   Pushing to `main` publishes the site: https://commanderwi11.github.io/Motorhome_Search/
 - **launchd job:** `com.openbob.motorhome-search-weekly` (renamed 2026-07-20 from
