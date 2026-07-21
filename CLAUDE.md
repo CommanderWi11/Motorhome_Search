@@ -1,8 +1,10 @@
 # Motorhome Lifestyle
 
 **Purpose:** Find the best integral/perfilada motorhome in the Canary Islands for a
-family of four with two toddlers. Every Monday at 07:00 the pipeline searches, does
-deep research, and publishes the week's **Top 5** to the dashboard.
+family of four with two toddlers. Every day at 07:00 the pipeline searches, does deep
+research, and refreshes the current week's **Top 5** on the dashboard. The board itself
+is still WEEK-keyed (see `board.py`) — daily runs keep that week's Top 5 fresh with
+whatever's new, they don't create a new section per day.
 
 ## Where things live
 
@@ -18,12 +20,13 @@ one place. There is no other copy — don't recreate the split.
   repo name. Update any bookmark to the new URL below.).
 - **GitHub Pages serves `docs/` from `main`** (legacy mode, no Actions workflow).
   Pushing to `main` publishes the site: https://commanderwi11.github.io/Motorhome_Search/
-- **launchd job:** `com.openbob.motorhome-search-weekly` (renamed 2026-07-20 from
+- **launchd job:** `com.openbob.motorhome-search-daily` (renamed 2026-07-21 from
+  `com.openbob.motorhome-search-weekly`, itself renamed 2026-07-20 from
   `com.openbob.camper-weekly`), symlinked into `~/Library/LaunchAgents/` from
-  `launchd/com.openbob.motorhome-search-weekly.plist` in this repo.
-- **Logs:** `~/Library/Logs/motorhome-weekly.log` (renamed from `camper-weekly.log`).
+  `launchd/com.openbob.motorhome-search-daily.plist` in this repo.
+- **Logs:** `~/Library/Logs/motorhome-daily.log` (renamed from `motorhome-weekly.log`).
 
-## The weekly pipeline
+## The pipeline
 
     scripts/harvest.py        Stage A  scrape every source        -> scripts/candidates.json
     scripts/research-prompt.md Stage B  claude -p reads ads, web-searches, ranks
@@ -32,16 +35,16 @@ one place. There is no other copy — don't recreate the split.
     git push                  Stage D  Pages redeploys in ~60s
 
     scripts/weekly-search.sh            orchestrates all four
-    launchd/com.openbob.motorhome-search-weekly.plist   Mondays 07:00
+    launchd/com.openbob.motorhome-search-daily.plist   every day, 07:00 + 13:00/19:00 retries
 
-**Run it now** (any time — it is idempotent per ISO week):
+**Run it now** (any time — it is idempotent per CALENDAR DAY, not per week):
 
 ```bash
-launchctl kickstart -k gui/$(id -u)/com.openbob.motorhome-search-weekly
-tail -f ~/Library/Logs/motorhome-weekly.log
+launchctl kickstart -k gui/$(id -u)/com.openbob.motorhome-search-daily
+tail -f ~/Library/Logs/motorhome-daily.log
 ```
 
-To force a re-run of a week that already published, delete its marker in `.state/`.
+To force a re-run on a day that already published, delete today's marker in `.state/`.
 
 ## Things that will bite you
 
@@ -73,7 +76,11 @@ To force a re-run of a week that already published, delete its marker in `.state
   Documents/com~apple~CloudDocs/`). iCloud can evict local files to cloud-only
   placeholders; this risk was raised and knowingly accepted during the 2026-07-20
   consolidation rather than pinning the folder "Keep Downloaded". If the unattended
-  07:00 Monday run ever fails specifically on missing/placeholder files, this is why.
+  07:00 daily run ever fails specifically on missing/placeholder files, this is why.
+- **Daily means up to 3x/day `claude -p` Stage B invocations, not up to 3x/week.**
+  Switched from Monday-only to daily 2026-07-21 at Luis's request (see MEMORY.md) —
+  worth knowing if Claude session limits start getting hit more often than the
+  occasional Monday-morning one that happened before this change.
 
 ## The rubric
 

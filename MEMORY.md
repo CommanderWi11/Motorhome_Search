@@ -1,6 +1,33 @@
 # Motorhome Lifestyle Memory
 
-Last reviewed: 2026-07-20
+Last reviewed: 2026-07-21
+
+## 2026-07-21 schedule change — Monday-only to daily
+
+Luis asked to run the search daily instead of once a week. Clarified scope first since
+the board is fundamentally WEEK-keyed (`board.py`: one position per ISO week) — two
+readings existed: (a) refresh the current week's Top 5 daily, keeping week-grouping as
+the UI model, or (b) switch the board itself to day-keyed sections. Luis chose (a).
+
+- `board.py` / dashboard model: **unchanged**. Still one card per vehicle, positioned by
+  the most recent ISO week it won. A same-week rerun just promotes into that week's
+  existing entries — the cross-source dedup added earlier the same week (`same_vehicle`)
+  applies here too, so daily reruns don't create duplicates either.
+- `scripts/weekly-search.sh`: idempotency marker changed from `.state/<week>.done` to
+  `.state/<date>.done` — was blocking every run after the first success of the week
+  (by design, before this change); now blocks only repeats within the same calendar day.
+  Commit message now includes the date (`chore: top 5 refresh <date> (week <week>)`) so
+  daily republishes are distinguishable in git log.
+- launchd: `com.openbob.motorhome-search-weekly` renamed to
+  `com.openbob.motorhome-search-daily` (plist file, Label, log file all renamed to
+  match); `StartCalendarInterval` dropped its `Weekday` key so all three slots
+  (07:00/13:00/19:00 — the same retry pattern proven necessary the day before, see the
+  hang incident below) fire every day instead of only Monday.
+- **Cost/usage note:** this is up to 3x/day `claude -p` Stage B invocations now, not up
+  to 3x/week — a real multiplier on Claude session usage. Worth watching if session
+  limits start getting hit more often; the market itself (35-45 units total) barely
+  turns over daily, so most days will republish the same winners and cost a research
+  pass without changing what the family sees.
 
 ## 2026-07-20 consolidation — Motorhome_HQ/Motorhome_Search
 
