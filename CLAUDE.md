@@ -66,12 +66,21 @@ To force a re-run on a day that already published, delete today's marker in `.st
   The Supabase table names (`camper_comments`, `camper_stars`, `camper_hidden`,
   `camper_status`) still carry the old `camper_` prefix — left as-is, since Supabase
   is dead anyway and renaming would require a live migration for no benefit.
-- **A `claude -p` Stage B run can hang with zero progress and zero error.** On
-  2026-07-20 the 19:00 retry sat at 0% CPU with no open network connections and no
-  session transcript file created for 2.5 hours — not a session-limit failure (which
-  exits cleanly), a true hang. If `ps`/`lsof` show no active connections and no fresh
-  file under `~/.claude/projects/<encoded-repo-path>/*.jsonl`, kill the process tree
-  and rerun `weekly-search.sh` manually rather than waiting indefinitely.
+- **A `claude -p` Stage B run can hang with zero progress and zero error.** Happened
+  2026-07-20 (19:00 retry) and again 2026-07-23 (manual run) — 0% CPU, no open network
+  connections, no session transcript file ever created under
+  `~/.claude/projects/<encoded-repo-path>/*.jsonl`, for hours. Not a session-limit
+  failure (which exits cleanly) — a true internal hang, root cause unconfirmed
+  (candidates: iCloud placeholder eviction on a synchronous file read, an internal CLI
+  deadlock — the repo's own scripts/CLAUDE.md files loaded fine on file inspection, so
+  a plain missing-file explanation doesn't fully fit). **Fixed 2026-07-23**:
+  `weekly-search.sh` now runs Stage B in the background under a plain-bash watchdog
+  (`STAGE_B_TIMEOUT`, 25 min) and kills it on expiry — no `timeout`/`gtimeout` binary
+  is installed on this Mac, hence the manual loop instead of a one-liner. A killed hang
+  degrades to the normal "no winners.json" failure path, so the existing 13:00/19:00
+  retry slots recover from it unattended instead of a human needing to notice and kill
+  it. If this still doesn't fully explain future hangs, next step would be `fs_usage`
+  or `dtruss` on the stuck PID to see exactly which syscall it's blocked in.
 - **This folder is inside iCloud Drive** (`AI Coworking` is under `~/Library/Mobile
   Documents/com~apple~CloudDocs/`). iCloud can evict local files to cloud-only
   placeholders; this risk was raised and knowingly accepted during the 2026-07-20

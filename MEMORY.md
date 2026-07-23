@@ -1,6 +1,34 @@
 # Motorhome Lifestyle Memory
 
-Last reviewed: 2026-07-21
+Last reviewed: 2026-07-23
+
+## 2026-07-23 second Stage B hang — added a watchdog (permanent fix)
+
+Manually triggered the daily search; Stage B (`claude -p`) hung again — same signature
+as the 2026-07-20 incident (0% CPU, zero open network connections, no session
+transcript ever created under `~/.claude/projects/...`), this time for 4h17m before
+noticed. Killed the process tree on Luis's authorization, reran `weekly-search.sh`
+manually — completed cleanly in 6.5 min, published board for 2026-W30, commit
+`2066a11` pushed.
+
+Since this is now a repeat (not a one-off), added an actual fix instead of relying on
+manual detection again:
+- `scripts/weekly-search.sh` Stage B now runs `claude -p` in the background under a
+  plain-bash watchdog (`STAGE_B_TIMEOUT=1500`, 25 min) that kills it on expiry. No
+  `timeout`/`gtimeout` binary is installed on this Mac, hence a manual poll loop
+  instead of a one-liner.
+- A killed hang now falls through to the same "no winners.json → exit 2" path as any
+  other Stage B failure, so the existing 13:00/19:00 daily retry slots recover from it
+  automatically — no more silent multi-hour freeze waiting on a human to notice.
+- Root cause is still **unconfirmed**. Ruled out: session-limit failure (exits
+  cleanly, doesn't match), missing `--allowedTools` permission prompt (already set,
+  designed for exactly this headless case). Leading candidates: iCloud placeholder
+  eviction blocking a synchronous file read (this repo lives under
+  `~/Library/Mobile Documents/com~apple~CloudDocs/`, a known-accepted risk since the
+  2026-07-20 consolidation), or an internal Claude Code CLI deadlock. If it recurs
+  despite the watchdog now bounding the damage, next diagnostic step is `fs_usage` or
+  `dtruss` on the stuck PID to see the exact blocked syscall.
+- See also `CLAUDE.md` "Things that will bite you" — updated in the same pass.
 
 ## 2026-07-21 schedule change — Monday-only to daily
 
