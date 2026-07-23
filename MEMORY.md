@@ -2,6 +2,18 @@
 
 Last reviewed: 2026-07-23
 
+## 2026-07-23 watchdog follow-up — capture diagnostics before killing
+
+Luis pushed back correctly: a watchdog that kills a hang every run isn't a fix if the
+hang itself is unexplained. Both prior hangs (2026-07-20, 2026-07-23) got killed before
+anyone captured what the process was actually stuck on — so root cause was never more
+than a guess (iCloud placeholder eviction vs. an internal CLI deadlock, see below).
+Added: right before the watchdog kills a timed-out `claude -p`, it now runs
+`sample "$CLAUDE_PID" 5 -file .state/hang-sample-<timestamp>.txt` — dumps every
+thread's call stack while the process is still suspended, no sudo needed for a
+same-user process (verified: `sample $$ 1 -file ...` on the shell itself worked
+cleanly). Next hang should leave an actual answer instead of just a corpse.
+
 ## 2026-07-23 second Stage B hang — added a watchdog (permanent fix)
 
 Manually triggered the daily search; Stage B (`claude -p`) hung again — same signature

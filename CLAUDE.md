@@ -79,8 +79,13 @@ To force a re-run on a day that already published, delete today's marker in `.st
   is installed on this Mac, hence the manual loop instead of a one-liner. A killed hang
   degrades to the normal "no winners.json" failure path, so the existing 13:00/19:00
   retry slots recover from it unattended instead of a human needing to notice and kill
-  it. If this still doesn't fully explain future hangs, next step would be `fs_usage`
-  or `dtruss` on the stuck PID to see exactly which syscall it's blocked in.
+  it. **Also fixed 2026-07-23**: before killing, the watchdog now runs
+  `sample "$CLAUDE_PID" 5 -file .state/hang-sample-<timestamp>.txt` to capture every
+  thread's call stack while the process is still stuck — both prior hangs were killed
+  before anyone looked at what they were blocked on, so root cause was never more than
+  a guess. If it hangs again, read that file first — it should show the actual blocked
+  syscall (e.g. a file read stuck on iCloud vs. something inside the CLI itself)
+  instead of needing a manual `fs_usage`/`dtruss` session after the fact.
 - **This folder is inside iCloud Drive** (`AI Coworking` is under `~/Library/Mobile
   Documents/com~apple~CloudDocs/`). iCloud can evict local files to cloud-only
   placeholders; this risk was raised and knowingly accepted during the 2026-07-20
