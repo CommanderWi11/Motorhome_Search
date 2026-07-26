@@ -227,6 +227,23 @@ the single source of truth, replacing the old Canary-only rubric in
 - Deleted stray `docs/superpowers/specs/*.md` (a design doc that was sitting inside
   the served Pages root by accident).
 
+**First real run (same day, 13:47-14:00)**: manually kicked off right after the
+rebuild. Stage B completed in 651s from the new scratch dir (vs. 7 straight hangs at
+25min before the fix) — first evidence the hang fix works, not yet confirmed by an
+actual unattended scheduled run. Stage C then rejected the output: `same_vehicle()`
+false-positived a Giottiline Toscan 69GC against an unrelated Challenger Fiat C387,
+both merely sharing generic layout words ("camas", "gemelas", "estrenar") that the
+new brief's richer title style introduces into nearly every listing now. Fixed by
+expanding `_FP_STOPWORDS` in `harvest.py` with the new shared vocabulary (camas,
+gemelas, garaje, kit, separado, estrenar, etc.) — verified the specific collision
+resolves and all 56 tests still pass. Re-ran Stage C against the already-captured
+winners.json (no need to re-run the expensive Stage B) and published for real: 5
+winners, Spain + France, top pick an Etrusco 7400SB already in Tenerife (€64,900).
+Emailed to luisnavm@gmail.com. If `same_vehicle` false-positives again, the
+stopword list in `harvest.py` (`_FP_STOPWORDS`) is the first place to look —
+generic spec/layout vocabulary shared across most listings under the new rubric is
+the recurring risk, not brand/model collisions.
+
 ## Live URLs
 - **Dashboard:** https://commanderwi11.github.io/Motorhome_Search/
 - **GitHub repo:** https://github.com/CommanderWi11/Motorhome_Search
