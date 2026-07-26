@@ -117,6 +117,15 @@ neither is a Canary-only location requirement anymore. Logistics note: the famil
 self-drives the pickup as a road trip, so distance/country isn't penalized — only the
 Canary ferry crossing is a real added cost.
 
+**No body-type restriction** (2026-07-26, second fix that day) — the brief never
+asked to exclude capuchinas/campervans or require integral/perfilada; that was
+purely an old-rubric holdover. `harvest.py`'s `_is_target()`/`_BRAND_RE` no longer
+filter on body type (brand list now matches the brief's own §5 model families,
+nothing more). **No invented percentage scoring** either — the brief says "rank by
+overall value" with no weights/formula, so `research-prompt.md` asks for holistic
+judgment, not a 40/35/15/10-style rubric. If you're extending this prompt later,
+resist re-adding either — both crept back in once already from muscle memory.
+
 Full rubric: `scripts/research-prompt.md`.
 
 ## Discarding

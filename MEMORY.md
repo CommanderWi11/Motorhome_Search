@@ -244,6 +244,30 @@ stopword list in `harvest.py` (`_FP_STOPWORDS`) is the first place to look —
 generic spec/layout vocabulary shared across most listings under the new rubric is
 the recurring risk, not brand/model collisions.
 
+**Same-day follow-up correction**: Luis pointed out the rewrite still carried old
+Canary-rubric parameters despite the brief not asking for them. Two real leftovers,
+both fixed:
+1. `research-prompt.md` had an invented 35/30/20/15 percentage-weighted scoring
+   rubric — structurally copied from the OLD rubric's 40/35/15/10, but the brief
+   itself only says "rank by overall value" with no formula. Replaced with holistic
+   judgment instructions, no weights.
+2. `harvest.py` still hard-rejected capuchinas/campervans and required
+   integral/perfilada (`_ACCEPT_RE`/`_REJECT_RE`) — an old-rubric body-type
+   restriction the brief never asked for. Removed entirely; `_is_target()` no
+   longer filters on body type, `_BRAND_RE` now matches only the brief's own §5
+   model-family list (dropped carthago/frankia/concorde/niesmann/morelo/sun
+   living/pilote/mclouis/laika — none are in the brief). Also added the explicit
+   €50k-100k budget statement to the prompt (it was missing from the prompt text
+   itself, only enforced via params.json's Stage A gates, which don't constrain
+   Stage B's own live Europe-wide search at all).
+
+**Lesson for future edits to this project**: when adapting the old
+Canary-only-rubric prompt/scraper into a new brief, structural habits (weighted
+scoring, body-type gates) carry over silently even when the explicit numbers are
+updated. Cross-check every filter/gate in both `research-prompt.md` AND
+`harvest.py` against the actual brief text, not just against "what looks similar
+to before."
+
 ## Live URLs
 - **Dashboard:** https://commanderwi11.github.io/Motorhome_Search/
 - **GitHub repo:** https://github.com/CommanderWi11/Motorhome_Search
