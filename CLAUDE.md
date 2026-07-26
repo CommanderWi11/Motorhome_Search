@@ -30,7 +30,7 @@ one place. There is no other copy — don't recreate the split.
 
 ## The pipeline
 
-    scripts/harvest.py        Stage A  scrape every source        -> scripts/candidates.json
+    scripts/harvest.py        Stage A  Milanuncios+Coches.net      -> scripts/candidates.json
     scripts/research-prompt.md Stage B  claude -p reads ads, web-searches, ranks
                                         -> scripts/winners.json
     scripts/apply_winners.py  Stage C  validate + fold into board -> docs/listings.json
@@ -117,14 +117,19 @@ neither is a Canary-only location requirement anymore. Logistics note: the famil
 self-drives the pickup as a road trip, so distance/country isn't penalized — only the
 Canary ferry crossing is a real added cost.
 
-**No body-type restriction** (2026-07-26, second fix that day) — the brief never
-asked to exclude capuchinas/campervans or require integral/perfilada; that was
-purely an old-rubric holdover. `harvest.py`'s `_is_target()`/`_BRAND_RE` no longer
-filter on body type (brand list now matches the brief's own §5 model families,
-nothing more). **No invented percentage scoring** either — the brief says "rank by
-overall value" with no weights/formula, so `research-prompt.md` asks for holistic
-judgment, not a 40/35/15/10-style rubric. If you're extending this prompt later,
-resist re-adding either — both crept back in once already from muscle memory.
+**No body-type restriction** — the brief never asked to exclude capuchinas/
+campervans or require integral/perfilada; that was purely an old-rubric holdover.
+**No invented percentage scoring** — the brief says "rank by overall value" with
+no weights/formula, so `research-prompt.md` asks for holistic judgment, not a
+40/35/15/10-style rubric. **Only 2 harvested sources** (2026-07-26, third fix) —
+`harvest.py`'s `SOURCES` is just Milanuncios + Coches.net (nationwide Spain, not
+Canarias-only), matching the brief's §5 portal list exactly. Wallapop,
+Autocaravanas DM, Mundo Autocaravanas, Campermax, caravanas.net, RentCamper
+Canarias, and Autocaravanas Canarias were all removed — none were ever named in
+the brief, and Mundo Autocaravanas alone had been 43% of the candidate pool. If
+you're extending this prompt or the harvester later, resist re-adding any of
+these three — all three crept back in once already from muscle memory (see
+MEMORY.md for the full pattern across all three corrections).
 
 Full rubric: `scripts/research-prompt.md`.
 

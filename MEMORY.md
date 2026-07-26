@@ -268,6 +268,59 @@ updated. Cross-check every filter/gate in both `research-prompt.md` AND
 `harvest.py` against the actual brief text, not just against "what looks similar
 to before."
 
+## Same-day third correction — sources, age, budget
+
+Luis, again: "you are still holding parameters from the old project in searches...
+use exclusively the following." A third read-only audit found the real remaining
+issue: **sources**, not just gates/weights this time.
+
+`harvest.py`'s `SOURCES` hit 7 sites; the brief's §5 portal list for Spain names
+only Milanuncios/Coches.net/Autocasion. Wallapop, Autocaravanas DM, Mundo
+Autocaravanas, Campermax, caravanas.net were never in the brief at all — leftover
+from the old Canary-only project's own source discovery (Mundo Autocaravanas alone
+was 34/80 = 43% of the candidate pool). `research-prompt.md` additionally
+hard-coded RentCamper Canarias + Autocaravanas Canarias as *mandatory* Stage B
+fetches every run (calling RentCamper "our single best family source" — old-rubric
+evaluation language), and told Stage B all 7 harvester sources "siguen siendo
+candidatos válidos" — actively re-legitimizing them instead of flagging the gap.
+
+Also found: `max_age_years: 15` was a hard Stage-A reject with no brief basis,
+directly contradicting the brief's "never discard on mileage/age alone." And
+budget (`min_price`/`max_price`) was *also* a hard Stage-A reject, despite living
+in the brief's "Parameters" section (§1), not its explicit 5-item "reject anything
+that fails these" table (§2) — same category as height, which the brief
+explicitly says is "not a constraint." Real proof the intended behavior was
+already soft: the current #5 winner (€41,990 Challenger, 16% under the 50k floor)
+was included by Stage B with a disclosure flag — but only because it came from
+Stage B's own live search, bypassing Stage A's hard gate. An identical candidate
+from Milanuncios/Coches.net would have been silently dropped.
+
+**Fixed, user chose the strict option** (remove all 7 non-brief sources rather
+than keep them relabeled as "extra"): `harvest.py` now only scrapes Milanuncios +
+Coches.net, both widened from Canarias-only URLs to nationwide Spain
+(`milanuncios.com/autocaravanas-de-segunda-mano/` no suffix;
+`coches.net/autocaravanas-y-remolques/` — note this category slug was renamed
+from `autocaravanas-segunda-mano`, the old path only still works via redirect).
+`fetch_wallapop`/`fetch_autocaravanas_dm`/`fetch_mundo_autocaravanas`/
+`fetch_campermax`/`fetch_caravanas_net` deleted entirely, along with `_is_target`'s
+strict/brand-whitelist mode (`_BRAND_RE`) since Wallapop was its only caller,
+`_passes_age`/`apply_price_filter` (no longer enforced — Stage B judges age/price
+holistically per the brief), and now-dead helpers (`_parse_attrs`, `_soup`,
+`_price_from`, `_ancestor_text`, `_blank`, `JSON_HEADERS`). `params.json` lost
+`max_age_years` and the Wallapop geo-filter. `research-prompt.md` lost the
+mandatory RentCamper/Autocaravanas Canarias section and the "still valid
+candidates" framing for the 5 removed sources. One-off cleanup: purged 66 stale
+non-brief entries from `scripts/candidates.json` (80→14; verified live re-run
+afterward: 22, all `milanuncios`/`coches_net`). 47 tests pass (down from 56 — 9
+removed for deleted functionality, none rewritten to fake-cover dead code).
+
+**Pattern across all three corrections today**: each fix surfaced a NEW category
+of old-project leftover the previous audit missed (invented scoring → body-type
+filter → non-brief sources/gates). If a fourth complaint comes in, audit
+`scripts/apply_winners.py`'s `validate()` and `scripts/board.py` next — not yet
+audited for old-rubric assumptions as thoroughly as `harvest.py`/
+`research-prompt.md` were across these three passes.
+
 ## Live URLs
 - **Dashboard:** https://commanderwi11.github.io/Motorhome_Search/
 - **GitHub repo:** https://github.com/CommanderWi11/Motorhome_Search
