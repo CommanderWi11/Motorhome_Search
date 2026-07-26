@@ -1,10 +1,12 @@
 # Motorhome Lifestyle
 
-**Purpose:** Find the best integral/perfilada motorhome in the Canary Islands for a
-family of four with two toddlers. Every day at 07:00 the pipeline searches, does deep
-research, and refreshes the current week's **Top 5** on the dashboard. The board itself
-is still WEEK-keyed (see `board.py`) — daily runs keep that week's Top 5 fresh with
-whatever's new, they don't create a new section per day.
+**Purpose:** Find the best motorhome for a family of four (2 adults, a toddler and a
+baby) — search scope is now **all of Europe** (buy anywhere, self-drive it back as a
+road trip, ferry the last leg to the Canaries). Every day at 07:00 the pipeline
+searches, does deep research, and publishes today's **Top 5** on the dashboard. The
+board is Top 5 (today) + Favorites (starred) — no week-by-week archive (`board.py`
+dropped the ISO-week model 2026-07-26): a listing that drops out of the Top 5 and was
+never starred simply disappears on the next run.
 
 ## Where things live
 
@@ -57,15 +59,20 @@ To force a re-run on a day that already published, delete today's marker in `.st
 - **Never send `Accept-Encoding: br`** from the scrapers. `requests` cannot decode
   Brotli without the optional package, and you get binary garbage that every parser
   fails on *silently*.
-- **`docs/listings.json` is a BOARD, not a feed.** Each entry is a past or present
-  winner carrying the week it last won. Do not append to it — that is what
-  `candidates.json` is for.
-- **Supabase is currently dead** (project deleted; see `docs/supabase-setup.sql`). The
-  dashboard falls back to localStorage and the weekly search reads
-  `scripts/blocklist.json`, so nothing is broken — it just doesn't sync across devices.
-  The Supabase table names (`camper_comments`, `camper_stars`, `camper_hidden`,
-  `camper_status`) still carry the old `camper_` prefix — left as-is, since Supabase
-  is dead anyway and renaming would require a live migration for no benefit.
+- **`docs/listings.json` is Top 5 + Favorites, not a feed and not a week-archive.**
+  An entry is on the board if it won today's Top 5 (`rank` 1-5) OR is starred
+  (`rank: null`, a Favorite). Everything else is dropped by `board.update_board()`.
+  Do not append to it — that is what `candidates.json` is for.
+- **Supabase** — re-provisioning was in progress as of 2026-07-26 (old project was
+  deleted; see `docs/supabase-setup.sql` for the schema). `harvest.py`'s
+  `_supabase_blocklist()`/`_supabase_starred()` read `camper_hidden`/`camper_stars`
+  straight from `docs/config.js`'s credentials — once a live project's URL/anon key
+  land there, both the discard-veto and Favorites-retention paths work with no further
+  code changes. Until then the dashboard falls back to localStorage (doesn't sync
+  across devices) and the daily search falls back to `scripts/blocklist.json` /
+  `scripts/starred.json`. The dashboard no longer uses `camper_comments`/
+  `camper_status` (dropped in the 2026-07-26 rebuild) — the tables still exist in the
+  schema, just unused; left as-is rather than migrated out.
 - **A `claude -p` Stage B run can hang with zero progress and zero error.** Happened
   2026-07-20 (19:00 retry) and again 2026-07-23 (manual run) — 0% CPU, no open network
   connections, no session transcript file ever created under
@@ -98,13 +105,17 @@ To force a re-run on a day that already published, delete today's marker in `.st
 
 ## The rubric
 
-Family of four, two toddlers. Hard gates: **≥4 seatbelted travel seats with 3-point
-belts** (the spec that silently disqualifies most cheap perfiladas — toddler car seats
-need them), ≥4 berths, bathroom with shower, ≤3,500 kg (B licence), Canary Islands,
-integral or perfilada. Then scored on family fit (40% — fixed beds and rear bunks are
-everything; a bed you rebuild nightly around sleeping toddlers is a serious defect),
-value (35%), condition/risk (15% — damp is the #1 killer of used motorhomes), and
-Canary practicality (10% — ≤7 m for the roads and ferries).
+Family of four (2 adults, a 2.5-year-old, a 3-month-old). Search scope is all of
+Europe now, not Canary-only — sourced from a separate brief
+(`motorhome-search-brief_2.md`, originally a Claude.ai Project) that superseded the
+old Canary-only rubric on 2026-07-26. Hard gates: MAM ≤3,500 kg (B licence),
+**length ≥ 6.90 m** (⚠️ flipped from the old ≤7m preference — do not carry the old
+number over), twin rear beds convertible to a double via a factory infill kit,
+**left-hand drive**, ≥4 forward-facing 3-point-belt travel seats. Bathroom (separate
+preferred) and a 4th/5th child berth are strong preferences now, not hard gates —
+neither is a Canary-only location requirement anymore. Logistics note: the family
+self-drives the pickup as a road trip, so distance/country isn't penalized — only the
+Canary ferry crossing is a real added cost.
 
 Full rubric: `scripts/research-prompt.md`.
 

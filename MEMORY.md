@@ -171,8 +171,61 @@ Result: total dataset now ~5-6 motorhomes/run (vs. ~3 pre-pivot). Smaller gain t
 - [x] GitHub Pages live at new URL
 - [x] launchd automation, retry windows, idempotency
 - [x] Single canonical location (2026-07-20 consolidation)
+- [x] Rebuilt for Europe-wide brief + Top5/Favorites dashboard (2026-07-26, see below)
 - [ ] Supabase re-provisioned (currently dead; dashboard runs on localStorage fallback)
 - [ ] Wallapop selectors fixed (currently returns 0 candidates — DOM changed)
+- [ ] Phase 2: dedicated Playwright scrapers for European portals (mobile.de, AutoScout24, leboncoin, Subito.it, CamperOnLine, Marktplaats)
+
+## 2026-07-26 rebuild — Europe-wide brief, Top 5 + Favorites, hang fix
+Luis wanted the dashboard redone (simpler, better-looking) and pointed out the real
+search criteria live in a *different* brief than this repo's rubric: a separate
+Claude.ai Project (`motorhome-search-brief_2.md`) targeting **all of Europe** (buy
+anywhere, self-drive it back as a road trip, ferry only the Canary leg — no
+distance/shipping-cost penalty by country), not Canary-only stock. That brief is now
+the single source of truth, replacing the old Canary-only rubric in
+`scripts/research-prompt.md`.
+
+**What changed:**
+- **Rubric**: length flipped ≤7m→**≥6.90m** (easy to get backwards — flagged explicitly
+  in the prompt), added **LHD** and twin-rear-beds-with-infill-kit as hard gates,
+  dropped bathroom/geography as hard gates (now preferences), budget floor
+  €20k→€50k, scope widened to mobile.de/AutoScout24/leboncoin/Subito.it/CamperOnLine/
+  Marktplaats/OLX via Stage B live search (no dedicated scrapers yet — that's Phase 2).
+- **Board model**: dropped the ISO-week archive entirely. `board.py` now does Top 5
+  (today, rank 1-5) + Favorites (starred, rank null) — nothing else persists. A
+  dropped, unstarred winner just disappears on the next run.
+- **Dashboard**: rebuilt from scratch **twice** in one session — first pass kept too
+  much of the old visual DNA (navy header, chip badges, overlay icons) and Luis said
+  so directly ("looks exactly like the old one"); second pass is genuinely new: cream
+  background, teal price accent, minimal cards with ONLY photo/title-link/star/delete/
+  price/size/mileage/location — no verdict, flags, spec chips, comments, or status
+  triage on the card. Lesson: "simpler" instructions this literal need a literal
+  field-by-field rebuild, not a restyle of the existing structure.
+- **Supabase**: `harvest.py` already had a dormant `camper_hidden`→blocklist bridge
+  (`_supabase_blocklist()`) that just needed a live project to reactivate — added the
+  missing other half, `_supabase_starred()`/`load_starred()` (mirrors the blocklist
+  pattern, local `scripts/starred.json` cache so a Supabase outage doesn't wipe
+  Favorites). Re-provisioning itself needs Luis to complete an OAuth flow via the
+  connected Supabase MCP (`mcp__plugin_supabase_supabase__authenticate`) — was still
+  pending his approval as of session end; `docs/config.js` needs the new URL/anon key
+  once that lands.
+- **Stage B hang**: 7 consecutive scheduled runs (07-20 through 07-26) hit the 25-min
+  watchdog, every hang-sample showing an identical `getcwd()`/`open_nocancel` stall at
+  process startup. A live interactive `claude -p "OK"` from the same iCloud repo cwd
+  does NOT reproduce it (~5s response) — so it's specific to the cold/unattended
+  launchd context, not a blanket "this cwd always hangs" fact. Mitigation applied
+  regardless (cheap and safe either way): `weekly-search.sh` now runs the `claude -p`
+  subprocess itself from a local non-iCloud scratch dir
+  (`~/Library/Application Support/motorhome-search/stage-b-scratch/`) via
+  `( cd "$SCRATCH" && exec claude -p ... )`, copying `candidates.json` in and
+  `winners.json` back out. Stage A/C/D untouched (they've never hung). Not yet
+  confirmed fixed by a real scheduled run — check `.state/hang-sample-*.txt` next time
+  it fires to see if new samples appear.
+- `docs/listings.json` reset to `[]` (old Canary-only board entries not worth
+  migrating under a fully different rubric). `tests/test_board.py` and
+  `tests/test_apply_winners.py` rewritten for the new model; 56 tests passing.
+- Deleted stray `docs/superpowers/specs/*.md` (a design doc that was sitting inside
+  the served Pages root by accident).
 
 ## Live URLs
 - **Dashboard:** https://commanderwi11.github.io/Motorhome_Search/
