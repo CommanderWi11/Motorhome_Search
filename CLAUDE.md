@@ -133,6 +133,28 @@ MEMORY.md for the full pattern across all three corrections).
 
 Full rubric: `scripts/research-prompt.md`.
 
+## History view (manual shortlists)
+
+2026-07-27: added a second, SEPARATE data path alongside the automated Top 5 +
+Favorites board. Luis periodically runs (or receives) a deep multi-portal
+research pass covering sites the automated harvester can't reach (mobile.de,
+AutoScout24, leboncoin, Marktplaats, Subito, individual French/Italian/German
+dealer sites, etc.) and pastes the result as a dated Top-5 markdown table. That
+gets transcribed by hand into `scripts/ingest_manual_shortlist.py` (its pasted
+tables sometimes carry OCR/copy corruption in cells and URLs — cross-reference
+other dates' mentions of the same listing before trusting a truncated one) and
+run to (re)build `docs/history.json`: one snapshot per date, ids/photos
+generated the same way the automated pipeline does (`harvest.make_id`/
+`fetch_og_image`, so a listing found manually and later found by the automated
+harvester resolve to the identical id). `docs/app.js` renders one section per
+date below Top 5/Favoritos, using the exact same card/star/delete code —
+starring or deleting a listing collapses across every date that mentions it.
+
+**This never touches `docs/listings.json`, `board.py`, or the daily pipeline.**
+It's purely additive: a per-date archive for manual research, existing
+alongside (not replacing) the automated Top-5-today model that intentionally
+has no archive of its own. Don't conflate the two if extending either later.
+
 ## Discarding
 
 The 🗑 button on a card means **never show me this again, and never search for it
