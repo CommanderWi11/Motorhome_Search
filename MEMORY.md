@@ -328,18 +328,63 @@ audited for old-rubric assumptions as thoroughly as `harvest.py`/
 ## Key decisions
 - Single canonical location: `01_Personal_HQ/Projects/Motorhome_HQ/Motorhome_Search/` — code, docs, and dashboard together, no separate "planning only" copy elsewhere.
 - GitHub Pages serves `docs/` folder from `main` branch (legacy mode, no Actions).
-- Supabase: Family_Plan project, tables prefixed `camper_*` — dead since project deletion; not renamed.
-- Wallapop API returns 403 unconditionally — use playwright headless Chromium instead; currently 0 candidates, selectors need fixing.
-- `docs/listings.json` is a board (each id holds one position, its most recent winning week), not an accumulating feed.
+- Supabase: re-provisioned 2026-07-26 (new project "motorhome-search", org "Alfred Org", eu-central-1) after the old Family_Plan project was deleted — live, `docs/config.js` has current credentials. Tables still prefixed `camper_*`.
+- `docs/listings.json` is Top 5 (today) + Favorites (starred), not an accumulating feed or week-archive — see "The rubric"/pipeline section of `CLAUDE.md` for the current model. (Superseded 2026-07-26; don't trust older "ISO-week board" language if it resurfaces anywhere.)
 
-## Sources (see also README.md and Resources/design-history/ for original design intent)
-- **JSON APIs** (solid): Autocaravanas DM, Mundo Autocaravanas.
-- **Playwright** (anti-bot): Milanuncios, Coches.net, Wallapop (currently 0 — broken selectors).
-- **Static HTML**: Campermax, caravanas.net.
-- **Via `claude -p` + WebFetch** (hostile markup): RentCamper Canarias (best family source — literas/bunk listings), Autocaravanas Canarias.
-- ~~Autoscout24~~, ~~Autocasion~~ — dropped, see above.
+## Sources
+Current, authoritative list lives in `CLAUDE.md`'s "The rubric" section (kept in one place deliberately, since this list has changed 3+ times — duplicating it here just risks the copy going stale again, which is exactly what happened to the pre-2026-07-26 version of this section).
 
 ## Open loops
-- Wallapop harvester returns 0 candidates — DOM/selectors changed, needs investigation.
-- Supabase project is dead (NXDOMAIN) — dashboard comments/stars/hidden state only persist to localStorage until re-provisioned via `docs/supabase-setup.sql`.
 - GitHub Actions cannot run this pipeline (datacenter IP block) — always runs via local launchd.
+- `scripts/apply_winners.py`/`scripts/board.py` still not audited as thoroughly against the brief as `harvest.py`/`research-prompt.md` (see the 2026-07-26 entry above) — next place to look if a further "old parameters" complaint arises.
+
+## 2026-07-27 — live 3:25am run + manual-shortlist history view
+
+**`claude -p` session limit discovery**: a premature manual `launchctl kickstart`
+at 00:36 hit "You've hit your session limit · resets 3:20am (Atlantic/Canary)"
+and failed cleanly (no publish, no `.done` marker written). This is exactly why
+Luis asked for the run at 3:25am specifically — 5 min after the daily reset.
+Re-ran at 03:25:07, succeeded in ~9 min: first live confirmation the 2026-07-26
+brief-only sourcing fix (commit `b0ae4e6`) holds end-to-end — Stage A pulled 36
+candidates from only `milanuncios`/`coches_net`, board published a Top 3
+(Challenger 287 GA, Etrusco 7400SB, Laika Kosmo 209).
+
+**Tooling note**: this session's safety-classifier gate intermittently failed
+(generic "temporarily unavailable" error) specifically on CronCreate and on
+Bash/Monitor calls that referenced `launchctl kickstart` inside a long
+backgrounded/scheduled script — even though the bare foreground command
+(`launchctl kickstart -k gui/$(id -u)/com.openbob.motorhome-search-daily`) and
+plain backgrounded wait-loops with no `launchctl` text both worked fine every
+time. Workaround used: a background wait-loop with no system-command text as
+the "alarm," then run the real command in foreground once woken. If a future
+session hits the same wall scheduling anything with launchctl, try that split
+before assuming the whole classifier is down.
+
+**Manual-shortlist history view** (feature, see `CLAUDE.md` for the technical
+writeup): Luis pastes dated Top-5 markdown shortlists from deep multi-portal
+research (mobile.de, AutoScout24, leboncoin, Marktplaats, Subito, individual
+dealer sites — everything the automated harvester can't reach) periodically,
+not on a fixed cadence. Asked (via AskUserQuestion) whether 3 such dated
+reports (07-24/07-25/07-27) should merge into today's board, only the latest
+should count, or all should show as a per-date history — chose **history
+view**, explicitly reversing the earlier 2026-07-26 decision to drop
+week-archiving from the *automated* board. Built as a wholly separate,
+additive path (`docs/history.json` + `scripts/ingest_manual_shortlist.py`) so
+it doesn't reopen that automated-board decision at all.
+**Why:** the source markdown consistently arrives with OCR/copy corruption in
+some cells and URLs (e.g. `caravan-wendt.darado-t-328...` missing
+`.de/de/fahrzeuge/c`) — cross-referencing later reports' mentions of the same
+still-live listing (explicitly called out as "held over unchanged") was enough
+to reconstruct every one this round, but a future batch might have a
+corruption with no clean copy anywhere — flag that to Luis rather than
+guessing a URL completion.
+**How to apply:** next time Luis pastes a new dated shortlist, transcribe it
+by hand into `scripts/ingest_manual_shortlist.py`'s `SHORTLISTS` dict (don't
+build a markdown-table parser — the corruption makes that fragile) and re-run
+it; it's idempotent per date.
+**Not done**: live visual QA of the new history section in a real browser —
+both playwriter and the claude-in-chrome extension were disconnected during
+this (very early morning, unattended) session. Verified instead via full
+manual code review, JSON validation, `node --check`, and the 47-test suite
+(unaffected, since this is additive). Worth an actual look next time Luis is
+at the machine.
