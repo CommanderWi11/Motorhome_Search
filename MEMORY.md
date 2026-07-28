@@ -388,3 +388,64 @@ this (very early morning, unattended) session. Verified instead via full
 manual code review, JSON validation, `node --check`, and the 47-test suite
 (unaffected, since this is additive). Worth an actual look next time Luis is
 at the machine.
+
+## 2026-07-28 — discard promise didn't cover Stage B, fixed in two passes
+
+Luis starred a history-view listing earlier (fixed separately, see prior
+entry — Favoritos only looked at `allListings`). Later he discarded a
+*different* listing off the live automated board: the Challenger 287 GA
+Special Edition (netcampers_fr, €41,990, the below-budget standout). Next
+"run a search" hit `FATAL: refusing to publish — netcampers_fr-de4813bc was
+discarded by the family but came back as a winner` — twice in a row, each
+costing a full ~12-13min Stage B run, because of a real gap: **the 🗑 button's
+"never search for it again" promise only ever covered `harvest.py`
+(candidates.json filtering).** Stage B's own live Europe-wide WebSearch has
+zero visibility into discards — it happily re-finds and re-ranks a
+genuinely great deal the family already said no to.
+
+**Fix, two layers (defense in depth, since Stage B is an LLM and prompt
+compliance isn't a guarantee):**
+1. `research-prompt.md` now has Stage B `curl` the Supabase `camper_hidden`
+   table (via `docs/config.js`'s public anon key, copied into the Stage B
+   scratch dir by `weekly-search.sh` alongside `candidates.json`) and drop
+   any finalist whose id matches. **First attempt at this had a real bug**:
+   the instruction said to check "id or URL" against the id list — nonsense,
+   since a URL can never equal a hash-id. Had to add an explicit
+   id-computation snippet (`hashlib.md5(url).hexdigest()[:8]`, same scheme as
+   `harvest.make_id`) for candidates Stage B finds itself (blank `id` field).
+2. Even with that fixed, **the exact same vehicle collided a second time**
+   the same day — Stage B found it relisted on **leboncoin** instead of
+   netcampers_fr, a totally different id (id = md5 of URL, so a different
+   URL always means a different id). Pure id-blocking architecturally cannot
+   catch a relist. Real fix: `apply_winners.py`'s `validate()` now also
+   cross-checks every winner against `same_vehicle()` (existing cross-source
+   title/year fuzzy-match, already used for on-board dedup) for every known
+   listing behind a blocked id — drawn from `candidates.json` +
+   `listings.json` + `history.json`. Deliberately uses the looser
+   `same_vehicle()`, not the strict `fingerprint()` that `harvest.py`'s own
+   blocklist propagation uses — the asymmetry is intentional: publishing a
+   discarded vehicle breaks an explicit trust promise, while over-matching
+   here just costs one rank slot for a day.
+3. **Also made a blocked winner non-fatal**: `validate()` used to abort the
+   *entire* run on any blocked-id collision. Now it drops just that one
+   winner and renumbers the rest (rank gaps only allowed when something was
+   actually dropped — Stage B assigning non-consecutive ranks on its own is
+   still a hard failure, that's a real quality signal). One bad entry now
+   costs a rank slot, not a wasted ~12min Stage B run and a stale board.
+
+**Gotcha hit while fixing this**: testing the fix by manually re-running
+`apply_winners.py` against the same `winners.json` TWICE (once before the
+same_vehicle fix landed) meant the first run's `board.update_board()` had
+already dropped the blocked listing's title/year out of `listings.json`
+(it wasn't a winner that pass, wasn't starred) — so the second run's
+`blocked_listings()` had nothing left to `same_vehicle()`-match against.
+Not a real bug: in a single normal pipeline pass, `validate()` reads the old
+board BEFORE `board.update_board()` overwrites it, so the data is always
+there when needed. Just a self-inflicted artifact of iterating on the fix
+live against real files — if this ever needs re-testing, do it against a
+fresh copy of winners.json, not by re-running apply_winners.py serially
+against files it already mutated.
+
+Net effect published this run: board dropped from the Stage-B-proposed 4 to
+3 (Etrusco 7400SB, Hymer/Carado T448, Laika Kosmo 209) — Challenger correctly
+excluded either way.
