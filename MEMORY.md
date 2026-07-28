@@ -1,6 +1,29 @@
 # Motorhome Lifestyle Memory
 
-Last reviewed: 2026-07-23
+Last reviewed: 2026-07-28
+
+## 2026-07-28 master portal list — Resources/europe-motorhome-selling-sites.md
+
+Luis added `Resources/europe-motorhome-selling-sites.md` — a much more exhaustive
+Europe-wide list of motorhome-selling sites (60+, organized by country, plus a
+"Best sites to search first" priority sub-list) — and asked that Stage B search
+through these sites, in order, on every run instead of the shorter ad hoc portal
+list that had been embedded directly in `research-prompt.md`'s prose.
+
+Wired in two places:
+- `scripts/weekly-search.sh` now copies the file into the Stage B scratch dir
+  (alongside `candidates.json`/`config.js`) since Stage B runs isolated from the
+  repo (see the 2026-07-23 hang fix below) and would otherwise have no way to
+  read it.
+- `scripts/research-prompt.md` step 2 now tells Stage B to open that file and
+  work through it in the order it's written — priority list first, then country
+  sections in file order — rather than trusting Stage B to invent its own portal
+  list from memory each run. Existing per-portal/total fetch budget (2 WebSearch +
+  3 WebFetch per portal, ~25-30 fetches total) is unchanged — with 60+ sites now
+  listed, the budget (not the site count) is what actually bounds a run.
+
+To add/remove sites going forward, edit the Resources file, not
+`research-prompt.md` — the prompt just points at it now.
 
 ## 2026-07-23 watchdog follow-up — capture diagnostics before killing
 

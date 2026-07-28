@@ -133,6 +133,13 @@ MEMORY.md for the full pattern across all three corrections).
 
 Full rubric: `scripts/research-prompt.md`.
 
+**Portal list**: `Resources/europe-motorhome-selling-sites.md` (added 2026-07-28)
+is the master list of Europe-wide selling sites Stage B works through, in the
+order the file lists them (priority list first, then country by country).
+`weekly-search.sh` copies it into the Stage B scratch dir alongside
+`candidates.json`/`config.js` since Stage B runs isolated from the repo. Add new
+sites there, not by editing the portal list inline in `research-prompt.md`.
+
 ## History view (manual shortlists)
 
 2026-07-27: added a second, SEPARATE data path alongside the automated Top 5 +
