@@ -158,7 +158,12 @@ has no archive of its own. Don't conflate the two if extending either later.
 ## Discarding
 
 The 🗑 button on a card means **never show me this again, and never search for it
-again** — `harvest.py` reads the discard list before it scrapes. From the terminal:
+again** — `harvest.py` reads the discard list before it scrapes, and Stage B checks
+it again live before finalizing `winners.json` (added 2026-07-28, after a discarded
+listing Stage B independently rediscovered via live web search got FATAL-rejected by
+Stage C's validator — Stage B previously had zero awareness of discards at all, since
+`candidates.json` filtering only protects harvester-sourced candidates, not Stage B's
+own European web search). From the terminal:
 
 ```bash
 ./scripts/discard.py <listing-id>       # discard
