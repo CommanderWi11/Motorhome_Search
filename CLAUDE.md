@@ -1,12 +1,14 @@
 # Motorhome Lifestyle
 
 **Purpose:** Find the best motorhome for a family of four (2 adults, a toddler and a
-baby) — search scope is now **all of Europe** (buy anywhere, self-drive it back as a
-road trip, ferry the last leg to the Canaries). Every day at 07:00 the pipeline
-searches, does deep research, and publishes today's **Top 5** on the dashboard. The
-board is Top 5 (today) + Favorites (starred) — no week-by-week archive (`board.py`
-dropped the ISO-week model 2026-07-26): a listing that drops out of the Top 5 and was
-never starred simply disappears on the next run.
+baby) — search scope is **the Canary Islands only** (2026-07-30: refocused back from
+the brief Europe-wide period, reverting that geography while keeping everything else
+learned since; see MEMORY.md), **new (0km/concesionario) or used, both searched
+extensively**. Every day at 03:00 the pipeline searches, does deep research, and
+publishes today's **Top 5** on the dashboard. The board is Top 5 (today) + Favorites
+(starred) — no week-by-week archive (`board.py` dropped the ISO-week model
+2026-07-26): a listing that drops out of the Top 5 and was never starred simply
+disappears on the next run.
 
 ## Where things live
 
@@ -37,7 +39,7 @@ one place. There is no other copy — don't recreate the split.
     git push                  Stage D  Pages redeploys in ~60s
 
     scripts/weekly-search.sh            orchestrates all four
-    launchd/com.openbob.motorhome-search-daily.plist   every day, 07:00 + 13:00/19:00 retries
+    launchd/com.openbob.motorhome-search-daily.plist   every day, 03:00 (single run, no retries — 2026-07-30)
 
 **Run it now** (any time — it is idempotent per CALENDAR DAY, not per week):
 
@@ -84,9 +86,10 @@ To force a re-run on a day that already published, delete today's marker in `.st
   `weekly-search.sh` now runs Stage B in the background under a plain-bash watchdog
   (`STAGE_B_TIMEOUT`, 25 min) and kills it on expiry — no `timeout`/`gtimeout` binary
   is installed on this Mac, hence the manual loop instead of a one-liner. A killed hang
-  degrades to the normal "no winners.json" failure path, so the existing 13:00/19:00
-  retry slots recover from it unattended instead of a human needing to notice and kill
-  it. **Also fixed 2026-07-23**: before killing, the watchdog now runs
+  degrades to the normal "no winners.json" failure path instead of a human needing to
+  notice and kill it (2026-07-30: this used to fall through to the 13:00/19:00 retry
+  slots — those are gone now, see below, so a killed hang today just means no fresh
+  board until tomorrow's 03:00). **Also fixed 2026-07-23**: before killing, the watchdog now runs
   `sample "$CLAUDE_PID" 5 -file .state/hang-sample-<timestamp>.txt` to capture every
   thread's call stack while the process is still stuck — both prior hangs were killed
   before anyone looked at what they were blocked on, so root cause was never more than
@@ -97,45 +100,53 @@ To force a re-run on a day that already published, delete today's marker in `.st
   Documents/com~apple~CloudDocs/`). iCloud can evict local files to cloud-only
   placeholders; this risk was raised and knowingly accepted during the 2026-07-20
   consolidation rather than pinning the folder "Keep Downloaded". If the unattended
-  07:00 daily run ever fails specifically on missing/placeholder files, this is why.
-- **Daily means up to 3x/day `claude -p` Stage B invocations, not up to 3x/week.**
-  Switched from Monday-only to daily 2026-07-21 at Luis's request (see MEMORY.md) —
-  worth knowing if Claude session limits start getting hit more often than the
-  occasional Monday-morning one that happened before this change.
+  03:00 daily run ever fails specifically on missing/placeholder files, this is why.
+- **Single 03:00 run, no same-day retries (2026-07-30).** Dropped the 07:00 +
+  13:00/19:00 retry slots at Luis's request when refocusing search scope to the
+  Canary Islands — back to one `claude -p` Stage B invocation/day, not up to 3x/day.
+  Known risk: the 2026-07-27 incident below documents Claude's daily session limit
+  resetting at 3:20am Atlantic/Canary — 03:00 is 20 min *before* that reset, so some
+  days may still hit the limit. With no retry left, that means no fresh board that
+  day; if it starts happening in the log, bump the plist to 03:25 (5 min after
+  reset, the timing Luis originally chose for exactly this reason on 2026-07-27).
 
 ## The rubric
 
-Family of four (2 adults, a 2.5-year-old, a 3-month-old). Search scope is all of
-Europe now, not Canary-only — sourced from a separate brief
-(`motorhome-search-brief_2.md`, originally a Claude.ai Project) that superseded the
-old Canary-only rubric on 2026-07-26. Hard gates: MAM ≤3,500 kg (B licence),
-**length ≥ 6.90 m** (⚠️ flipped from the old ≤7m preference — do not carry the old
-number over), twin rear beds convertible to a double via a factory infill kit,
-**left-hand drive**, ≥4 forward-facing 3-point-belt travel seats. Bathroom (separate
-preferred) and a 4th/5th child berth are strong preferences now, not hard gates —
-neither is a Canary-only location requirement anymore. Logistics note: the family
-self-drives the pickup as a road trip, so distance/country isn't penalized — only the
-Canary ferry crossing is a real added cost.
+Family of four (2 adults, a 2.5-year-old, a 3-month-old). **Search scope is the
+Canary Islands only** (2026-07-30: refocused back from the 2026-07-26 Europe-wide
+brief at Luis's explicit request — geography reverted, but the rest of that
+rebuild's lessons stay: no body-type restriction, no invented percentage scoring,
+Top5+Favorites board model). **Both new (0km/concesionario) and used are searched
+extensively** — this is new relative to the pre-2026-07-26 Canary-only rubric,
+which was used-only. Hard gates: MAM ≤3,500 kg (B licence), **length ≥ 6.90 m**
+(⚠️ this is unchanged from the Europe-wide period — do not revert to the old ≤7m
+preference, that number was never re-requested), twin rear beds convertible to a
+double via a factory infill kit, **left-hand drive**, ≥4 forward-facing
+3-point-belt travel seats. Bathroom (separate preferred) and a 4th/5th child berth
+remain strong preferences, not hard gates. Logistics note: no more pan-European
+self-drive/ferry framing — the vehicle is already in the islands, so the only
+geography-driven logistics that matter are an inter-island ferry hop (trivial,
+not a scoring factor) and IGIC vs IVA (Canarias is outside the EU VAT area).
 
-**No body-type restriction** — the brief never asked to exclude capuchinas/
-campervans or require integral/perfilada; that was purely an old-rubric holdover.
-**No invented percentage scoring** — the brief says "rank by overall value" with
-no weights/formula, so `research-prompt.md` asks for holistic judgment, not a
-40/35/15/10-style rubric. **Only 2 harvested sources** (2026-07-26, third fix) —
-`harvest.py`'s `SOURCES` is just Milanuncios + Coches.net (nationwide Spain, not
-Canarias-only), matching the brief's §5 portal list exactly. Wallapop,
-Autocaravanas DM, Mundo Autocaravanas, Campermax, caravanas.net, RentCamper
-Canarias, and Autocaravanas Canarias were all removed — none were ever named in
-the brief, and Mundo Autocaravanas alone had been 43% of the candidate pool. If
-you're extending this prompt or the harvester later, resist re-adding any of
-these three — all three crept back in once already from muscle memory (see
-MEMORY.md for the full pattern across all three corrections).
+**No body-type restriction** — carried over from the 2026-07-26 rebuild, still
+correct: don't exclude capuchinas/campervans or require integral/perfilada.
+**No invented percentage scoring** — same, "rank by overall value" with no
+weights/formula. **2 harvested sources, now Canarias-filtered** (2026-07-30) —
+`harvest.py`'s `SOURCES` is still just Milanuncios + Coches.net, but both URLs
+were switched back to their Canarias-only filter (`.../canarias.htm` and
+`.../canarias/` respectively — recovered from git history, verified live) instead
+of the nationwide-Spain URLs the 2026-07-26 rebuild had widened them to. Everything
+else — Wallapop, Autocasion, AutoScout24 España, RentCamper Canarias, Autocaravanas
+Canarias, and live search for new-vehicle dealers — is Stage B's job (live
+WebSearch/WebFetch), same division of labor as before.
 
 Full rubric: `scripts/research-prompt.md`.
 
-**Portal list**: `Resources/europe-motorhome-selling-sites.md` (added 2026-07-28)
-is the master list of Europe-wide selling sites Stage B works through, in the
-order the file lists them (priority list first, then country by country).
+**Portal list**: `Resources/canary-motorhome-selling-sites.md` (added 2026-07-30,
+replaces the 2026-07-28 Europe-wide file — which is left in the repo, marked
+superseded at its top, not deleted) is the master list of Canary Islands selling
+sources Stage B works through, in the order the file lists them (Canarias-filtered
+marketplaces, then known local dealers, then active new-vehicle-dealer search).
 `weekly-search.sh` copies it into the Stage B scratch dir alongside
 `candidates.json`/`config.js` since Stage B runs isolated from the repo. Add new
 sites there, not by editing the portal list inline in `research-prompt.md`.
@@ -170,7 +181,7 @@ it again live before finalizing `winners.json` (added 2026-07-28, after a discar
 listing Stage B independently rediscovered via live web search got FATAL-rejected by
 Stage C's validator — Stage B previously had zero awareness of discards at all, since
 `candidates.json` filtering only protects harvester-sourced candidates, not Stage B's
-own European web search). From the terminal:
+own live web search). From the terminal:
 
 ```bash
 ./scripts/discard.py <listing-id>       # discard

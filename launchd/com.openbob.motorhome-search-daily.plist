@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
-  Motorhome Lifestyle — refreshes the current week's Top 5, daily, 07:00 local.
+  Motorhome Lifestyle — refreshes today's Top 5, once a day, 03:00 local.
 
   Install:
     ln -sf "/Users/openbob/Library/Mobile Documents/com~apple~CloudDocs/AI Coworking/01_Personal_HQ/Projects/Motorhome_HQ/Motorhome_Search/launchd/com.openbob.motorhome-search-daily.plist" ~/Library/LaunchAgents/
@@ -19,7 +19,7 @@
   Note: this runs on YOUR Mac on purpose. GitHub Actions cannot do this job — the
   listing sites block datacenter IPs, which is why the old weekly-search.yml never
   produced a single listing. The trade-off is that the Mac must be awake; if it is
-  asleep at 07:00 launchd runs the job on next wake, and the idempotency marker in
+  asleep at 03:00 launchd runs the job on next wake, and the idempotency marker in
   weekly-search.sh makes sure it still only runs once per CALENDAR DAY.
 
   2026-07-20: renamed from com.openbob.camper-weekly (Camper_Lifestyle repo) as part
@@ -28,6 +28,15 @@
   stays WEEK-keyed (board.py), this just refreshes the current week's Top 5 more
   often instead of locking it after the first successful run of the week. Renamed
   from com.openbob.motorhome-search-weekly accordingly. See MEMORY.md.
+  2026-07-30: search scope refocused to the Canary Islands only (used + new), and
+  the schedule collapsed from 07:00/13:00/19:00 (one real run + two same-day
+  retries) down to a single 03:00 run, at Luis's explicit request. Trade-off: a
+  Stage B failure (session limit, hang, flaky site) no longer gets a same-day
+  retry — the next attempt is tomorrow's 03:00. Known risk: the 2026-07-27 MEMORY.md
+  entry documents Claude's daily session limit resetting at 3:20am Atlantic/Canary
+  — 03:00 is 20 minutes BEFORE that reset, so some days may still hit the limit
+  Stage B needs to run cleanly. If that starts happening in the log, the fix is a
+  one-line change to Hour/Minute below (e.g. bump to 03:25).
 -->
 <plist version="1.0">
 <dict>
@@ -44,33 +53,21 @@
        after the com.openbob.binter-payslips incident, 2026-07-11.) -->
 
   <!--
-    07:00 is the real daily run. The two later slots are RETRIES, and they exist
-    because Stage B can fail for reasons that have nothing to do with the code: a
-    Claude session limit, a flaky site, no network on wake. (The very first launchd
-    run, on 2026-07-13, died exactly this way — on a session limit. The 2026-07-20
-    19:00 retry also hung with zero session activity and had to be killed and rerun
-    manually — see MEMORY.md.)
-
-    weekly-search.sh only writes .state/<date>.done once it has actually published,
-    so a successful 07:00 run makes 13:00 and 19:00 exit immediately as no-ops —
-    while a failed one gets two more chances, instead of leaving the family with no
-    fresh board for the day. No `Weekday` key below, on purpose — every day fires.
+    2026-07-30: single 03:00 run, no retries — Luis's explicit request when
+    refocusing search scope to the Canary Islands only. Before this, 07:00 was the
+    real daily run with 13:00/19:00 as RETRIES for when Stage B failed for reasons
+    that have nothing to do with the code: a Claude session limit, a flaky site, no
+    network on wake. (The very first launchd run, on 2026-07-13, died exactly this
+    way — on a session limit. The 2026-07-20 19:00 retry also hung with zero session
+    activity and had to be killed and rerun manually — see MEMORY.md.) That safety
+    net is gone now: a failed 03:00 run means no fresh board until tomorrow's 03:00.
+    No `Weekday` key below, on purpose — every day fires.
   -->
   <key>StartCalendarInterval</key>
-  <array>
-    <dict>
-      <key>Hour</key><integer>7</integer>
-      <key>Minute</key><integer>0</integer>
-    </dict>
-    <dict>
-      <key>Hour</key><integer>13</integer>
-      <key>Minute</key><integer>0</integer>
-    </dict>
-    <dict>
-      <key>Hour</key><integer>19</integer>
-      <key>Minute</key><integer>0</integer>
-    </dict>
-  </array>
+  <dict>
+    <key>Hour</key><integer>3</integer>
+    <key>Minute</key><integer>0</integer>
+  </dict>
 
   <key>EnvironmentVariables</key>
   <dict>

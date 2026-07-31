@@ -1,8 +1,109 @@
 # Motorhome Lifestyle Memory
 
-Last reviewed: 2026-07-28
+Last reviewed: 2026-07-31
+
+## 2026-07-31 — manual search reports will keep including European finds
+
+Luis, right after confirming the 2026-07-30 Canary-only refocus was working:
+he will keep periodically supplying manual search reports (deep multi-portal
+research pastes) for me to ingest via the existing manual-shortlist
+history-view feature (`scripts/ingest_manual_shortlist.py` → `docs/history.json`,
+see the 2026-07-27 entry below) — and these will likely still include
+**European** finds, not just Canary Islands ones.
+
+**Why:** the manual-shortlist path is deliberately separate from the automated
+Top5+Favorites board (see 2026-07-26/2026-07-27 entries below) — it's Luis's
+own periodic deep research covering sites the automated harvester/Stage B
+can't reach. The 2026-07-30 refocus narrowed the *automated* pipeline's search
+scope to the Canary Islands; it does not narrow what Luis pastes into the
+manual history view. Don't assume a future manual shortlist should be
+Canary-only just because the automated pipeline now is — the two paths
+intentionally have different scopes and always have (see 2026-07-27 entry).
+
+**How to apply:** when Luis pastes a new dated shortlist (however many islands
+or countries it covers), transcribe it into `ingest_manual_shortlist.py`'s
+`SHORTLISTS` dict as usual and re-run it — no scope filtering needed on the
+manual path, regardless of what the automated pipeline is currently scoped to.
+
+## 2026-07-30 refocus — Canary Islands only, new+used, single 03:00 run
+
+Luis: "let's refocus this project on searching only for motorhomes in the Canary
+Islands, both used and new. Extensive search. Updates the dashboard and runs once
+a day at 3am." This reverts the geography half of the 2026-07-26 Europe-wide
+rebuild (see that entry below) while keeping everything else it taught: no
+body-type restriction, no invented percentage scoring, Top5+Favorites board model,
+the Stage B hang mitigations. **New** relative to even the pre-2026-07-26
+Canary-only rubric: that one was used-only; this one explicitly searches new
+(0km/concesionario) stock too.
+
+**Why:** Luis's direct instruction — no incident or external brief behind this
+one, just a scope decision. (Contrast with the 2026-07-26 change, which was
+driven by a separate Claude.ai Project brief.)
+
+**What changed:**
+- `scripts/harvest.py` — `fetch_milanuncios`/`fetch_coches_net` URLs switched back
+  to their Canarias-filtered versions (`milanuncios.com/autocaravanas-de-segunda-mano/canarias.htm`,
+  `coches.net/autocaravanas-y-remolques/canarias/`). The exact old Milanuncios URL
+  and the old (pre-slug-rename) Coches.net URL were recovered from `git show
+  b0ae4e6` (the commit that had widened them to nationwide); both Canarias URLs
+  were then verified live via `curl` (200, real "Canarias"/"provincia" content,
+  no bot-block stub) before landing in the scraper — didn't want to guess a filter
+  URL and silently break Stage A the way a wrong selector has before.
+- `Resources/canary-motorhome-selling-sites.md` — new file, replaces
+  `europe-motorhome-selling-sites.md` in the active pipeline (that file is marked
+  superseded at its own top, left in place, not deleted). Lists Canarias-filtered
+  general marketplaces (Milanuncios, Coches.net, Wallapop, Autocasion, AutoScout24
+  España), the two known Canary Islands dealers from this project's own history
+  (RentCamper Canarias, Autocaravanas Canarias — real businesses, previously
+  mandatory Stage B fetch targets before 2026-07-26), and — since there's no
+  reliable static list of every new-vehicle dealer in the islands — explicit
+  instructions for Stage B to actively WebSearch for concesionarios per island and
+  per brand rather than waiting for one to turn up. No fictitious dealer names
+  invented; anything not directly evidenced by project history is phrased as a
+  live-search instruction, not a hardcoded URL.
+- `scripts/research-prompt.md` — dropped the pan-European self-drive/ferry
+  framing and the whole "IVA y Canarias" import-logic section (replaced with a
+  short IGIC note: local Canary sales are already IGIC, not IVA, no import to
+  reason about). Dropped the DE/FR/IT/NL search-term table (no longer needed).
+  Added explicit "search new stock too, don't just wait for it" instructions.
+  Kept unchanged: every hard gate (MAM ≤3,500 kg, length ≥6.90 m, twin beds +
+  infill kit, LHD, ≥4 belted seats), the €50k-100k budget, the no-body-type-filter
+  and no-invented-scoring decisions from 2026-07-26, the discard/blocklist
+  cross-check mechanism, the model-family list (still pan-European brands, they're
+  sold new in Canarias too), and the output JSON contract's field names (`country`
+  now always "España", `vat_status` repurposed for IGIC but not renamed, to avoid
+  touching `apply_winners.py`/`board.py`/`app.js`, none of which validate or
+  render either field beyond passthrough — checked before deciding not to rename).
+- **Schedule**: `launchd/com.openbob.motorhome-search-daily.plist` collapsed from
+  three `StartCalendarInterval` entries (07:00 real run + 13:00/19:00 retries) to
+  one (03:00), per Luis's explicit "once a day at 3am." Reinstalled live via
+  `launchctl bootout` + `bootstrap` and verified the new single 03:00 interval is
+  actually active (`launchctl print` showed the old 3-entry schedule until this).
+  **Known risk, flagged but not resolved**: the 2026-07-27 entry below documents
+  Claude's daily session-limit reset at **3:20am Atlantic/Canary** — Luis had
+  specifically chosen 03:25 back then (5 min after reset) to dodge it. 03:00 is 20
+  min *before* that reset. With the retry slots gone, a run that hits the limit at
+  03:00 now has no same-day recovery — just no fresh board until the next 03:00.
+  Implemented literally as asked (03:00, not 03:25) since that's what was
+  requested; if the log starts showing session-limit failures at 03:00, the fix is
+  a one-line Hour/Minute change in the plist.
+- Docs updated for consistency: `CLAUDE.md`, `README.md` (both purpose/rubric/
+  schedule/sources sections). The separate manual-shortlist history-view feature
+  (`docs/history.json`, mobile.de/AutoScout24/etc. as sources a human pastes in
+  by hand) was deliberately left untouched — it's an orthogonal, Luis-driven
+  process, not part of the automated pipeline this refocus touches.
+- **Validation**: ran the full test suite after the `harvest.py` URL changes (no
+  test hardcodes the scrape URLs, only fingerprint/dedupe/blocklist logic, so no
+  regressions expected) and did one real end-to-end pipeline run (deleted today's
+  `.state` marker first, per the documented force-rerun procedure) to confirm
+  Stage A-D actually produce and publish Canary Islands (new+used) results under
+  the new prompt/sources before calling this done — see the run's own log /
+  outcome for what it actually found.
 
 ## 2026-07-28 master portal list — Resources/europe-motorhome-selling-sites.md
+
+**Superseded 2026-07-30** — this section describes the Europe-wide portal list,
+replaced by `canary-motorhome-selling-sites.md`. Left below as history.
 
 Luis added `Resources/europe-motorhome-selling-sites.md` — a much more exhaustive
 Europe-wide list of motorhome-selling sites (60+, organized by country, plus a
@@ -192,12 +293,13 @@ Result: total dataset now ~5-6 motorhomes/run (vs. ~3 pre-pivot). Smaller gain t
 - [x] Weekly pipeline (harvest → claude -p research → validate → publish)
 - [x] Dashboard (HTML + CSS + app.js), board model (not a feed)
 - [x] GitHub Pages live at new URL
-- [x] launchd automation, retry windows, idempotency
+- [x] launchd automation, idempotency (retry windows dropped 2026-07-30, see below)
 - [x] Single canonical location (2026-07-20 consolidation)
 - [x] Rebuilt for Europe-wide brief + Top5/Favorites dashboard (2026-07-26, see below)
+- [x] Refocused to Canary Islands only, new+used, single 03:00 run (2026-07-30, see above)
 - [ ] Supabase re-provisioned (currently dead; dashboard runs on localStorage fallback)
 - [ ] Wallapop selectors fixed (currently returns 0 candidates — DOM changed)
-- [ ] Phase 2: dedicated Playwright scrapers for European portals (mobile.de, AutoScout24, leboncoin, Subito.it, CamperOnLine, Marktplaats)
+- [ ] Phase 2: dedicated Playwright scrapers for Canary Islands sources beyond Milanuncios/Coches.net (Wallapop, Autocasion, AutoScout24 España, new-vehicle dealers)
 
 ## 2026-07-26 rebuild — Europe-wide brief, Top 5 + Favorites, hang fix
 Luis wanted the dashboard redone (simpler, better-looking) and pointed out the real
