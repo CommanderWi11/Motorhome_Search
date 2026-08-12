@@ -132,7 +132,10 @@ notes replace the local-IGIC-only note from the Canary detour.
 
 **No body-type restriction** — carried over from the 2026-07-26 rebuild, still
 correct: don't exclude capuchinas/campervans or require integral/perfilada.
-**No invented percentage scoring** — same, "rank by overall value" with no
+(2026-08-12: added a soft tiebreaker on top — Stage B now favors integral over
+perfilada when candidates are otherwise comparable, but this is a preference,
+not a filter; a standout perfilada deal wins exactly as before. See
+`research-prompt.md`.) **No invented percentage scoring** — same, "rank by overall value" with no
 weights/formula. **2 harvested sources, nationwide Spain again** (2026-08-11) —
 `harvest.py`'s `SOURCES` is still just Milanuncios + Coches.net, and both URLs
 are back to their nationwide-Spain form (no `/canarias.htm` or `/canarias/`
