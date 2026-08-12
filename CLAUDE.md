@@ -1,14 +1,14 @@
 # Motorhome Lifestyle
 
 **Purpose:** Find the best motorhome for a family of four (2 adults, a toddler and a
-baby) — search scope is **the Canary Islands only** (2026-07-30: refocused back from
-the brief Europe-wide period, reverting that geography while keeping everything else
-learned since; see MEMORY.md), **new (0km/concesionario) or used, both searched
-extensively**. Every day at 03:00 the pipeline searches, does deep research, and
-publishes today's **Top 5** on the dashboard. The board is Top 5 (today) + Favorites
-(starred) — no week-by-week archive (`board.py` dropped the ISO-week model
-2026-07-26): a listing that drops out of the Top 5 and was never starred simply
-disappears on the next run.
+baby) — search scope is **all of Europe** (2026-08-11: restored back from the brief
+2026-07-30 Canary-only detour, porting the geography forward rather than reverting,
+so new+used search and every non-geography fix since stays intact; see MEMORY.md),
+**new (0km/concesionario) or used, both searched extensively**. Every day at 03:00
+the pipeline searches, does deep research, and publishes today's **Top 5** on the
+dashboard. The board is Top 5 (today) + Favorites (starred) — no week-by-week
+archive (`board.py` dropped the ISO-week model 2026-07-26): a listing that drops
+out of the Top 5 and was never starred simply disappears on the next run.
 
 ## Where things live
 
@@ -112,44 +112,46 @@ To force a re-run on a day that already published, delete today's marker in `.st
 
 ## The rubric
 
-Family of four (2 adults, a 2.5-year-old, a 3-month-old). **Search scope is the
-Canary Islands only** (2026-07-30: refocused back from the 2026-07-26 Europe-wide
-brief at Luis's explicit request — geography reverted, but the rest of that
-rebuild's lessons stay: no body-type restriction, no invented percentage scoring,
-Top5+Favorites board model). **Both new (0km/concesionario) and used are searched
-extensively** — this is new relative to the pre-2026-07-26 Canary-only rubric,
-which was used-only. Hard gates: MAM ≤3,500 kg (B licence), **length ≥ 6.90 m**
-(⚠️ this is unchanged from the Europe-wide period — do not revert to the old ≤7m
-preference, that number was never re-requested), twin rear beds convertible to a
-double via a factory infill kit, **left-hand drive**, ≥4 forward-facing
-3-point-belt travel seats. Bathroom (separate preferred) and a 4th/5th child berth
-remain strong preferences, not hard gates. Logistics note: no more pan-European
-self-drive/ferry framing — the vehicle is already in the islands, so the only
-geography-driven logistics that matter are an inter-island ferry hop (trivial,
-not a scoring factor) and IGIC vs IVA (Canarias is outside the EU VAT area).
+Family of four (2 adults, a 2.5-year-old, a 3-month-old). **Search scope is all of
+Europe** (2026-08-11: restored from the 2026-07-30 Canary-only detour, ported
+forward rather than reverted — geography goes back to Europe-wide, but every
+non-geography lesson from both the 2026-07-26 rebuild and the Canary detour
+stays: no body-type restriction, no invented percentage scoring, Top5+Favorites
+board model, and new+used search). **Both new (0km/concesionario) and used are
+searched extensively** — this started as a Canary-only-detour addition
+(2026-07-30) and is kept now that scope is Europe-wide again; the original
+2026-07-26 Europe-wide brief had been used-only. Hard gates: MAM ≤3,500 kg (B
+licence), **length ≥ 6.90 m** (⚠️ do not revert to the old ≤7m preference, that
+number was never re-requested), twin rear beds convertible to a double via a
+factory infill kit, **left-hand drive**, ≥4 forward-facing 3-point-belt travel
+seats. Bathroom (separate preferred) and a 4th/5th child berth remain strong
+preferences, not hard gates. Logistics note: pan-European self-drive/ferry
+framing is back — buy anywhere in Europe, self-drive it back, ferry only the
+Canary leg (no distance/shipping-cost penalty by country) — and IVA/IGIC import
+notes replace the local-IGIC-only note from the Canary detour.
 
 **No body-type restriction** — carried over from the 2026-07-26 rebuild, still
 correct: don't exclude capuchinas/campervans or require integral/perfilada.
 **No invented percentage scoring** — same, "rank by overall value" with no
-weights/formula. **2 harvested sources, now Canarias-filtered** (2026-07-30) —
-`harvest.py`'s `SOURCES` is still just Milanuncios + Coches.net, but both URLs
-were switched back to their Canarias-only filter (`.../canarias.htm` and
-`.../canarias/` respectively — recovered from git history, verified live) instead
-of the nationwide-Spain URLs the 2026-07-26 rebuild had widened them to. Everything
-else — Wallapop, Autocasion, AutoScout24 España, RentCamper Canarias, Autocaravanas
-Canarias, and live search for new-vehicle dealers — is Stage B's job (live
-WebSearch/WebFetch), same division of labor as before.
+weights/formula. **2 harvested sources, nationwide Spain again** (2026-08-11) —
+`harvest.py`'s `SOURCES` is still just Milanuncios + Coches.net, and both URLs
+are back to their nationwide-Spain form (no `/canarias.htm` or `/canarias/`
+suffix — re-verified live via curl before landing, since they'd sat unused for
+12 days). Everything else — every other European country, Autocasion, AutoScout24,
+and live search for new-vehicle dealers anywhere in Europe — is Stage B's job
+(live WebSearch/WebFetch), same division of labor as before.
 
 Full rubric: `scripts/research-prompt.md`.
 
-**Portal list**: `Resources/canary-motorhome-selling-sites.md` (added 2026-07-30,
-replaces the 2026-07-28 Europe-wide file — which is left in the repo, marked
-superseded at its top, not deleted) is the master list of Canary Islands selling
-sources Stage B works through, in the order the file lists them (Canarias-filtered
-marketplaces, then known local dealers, then active new-vehicle-dealer search).
-`weekly-search.sh` copies it into the Stage B scratch dir alongside
-`candidates.json`/`config.js` since Stage B runs isolated from the repo. Add new
-sites there, not by editing the portal list inline in `research-prompt.md`.
+**Portal list**: `Resources/europe-motorhome-selling-sites.md` (added 2026-07-28,
+briefly superseded 2026-07-30 by a Canary-only file during that detour, restored
+2026-08-11 — the Canary file is left in the repo, marked superseded at its top,
+not deleted) is the master list of Europe-wide selling sources Stage B works
+through, in the order the file lists them (priority list, then country sections,
+then active new-vehicle-dealer search). `weekly-search.sh` copies it into the
+Stage B scratch dir alongside `candidates.json`/`config.js` since Stage B runs
+isolated from the repo. Add new sites there, not by editing the portal list
+inline in `research-prompt.md`.
 
 ## History view (manual shortlists)
 
