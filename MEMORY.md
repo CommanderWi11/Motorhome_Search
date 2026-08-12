@@ -1,6 +1,66 @@
 # Motorhome Lifestyle Memory
 
-Last reviewed: 2026-07-31
+Last reviewed: 2026-08-11
+
+## 2026-08-11 — Europe-wide search scope restored
+
+Luis asked to widen the automated pipeline's search back to all of Europe —
+the Canary Islands market is genuinely thin (~35-45 units per prior research),
+and the real fix for recall is geography, not more Canary-specific sources.
+Approved design doc: `docs/superpowers/specs/2026-08-11-europe-wide-search-restore-design.md`.
+
+**Why:** the 2026-07-30 Canary-only refocus (see that entry below) was a
+deliberate scope narrowing, not a mistake — but it left recall thin. Ported
+forward rather than `git revert`ed, to keep every non-geography fix layered on
+since (new+used search, Top5+Favorites model, discard defense-in-depth, hang
+mitigation).
+
+**What changed:**
+- `scripts/harvest.py` — `fetch_milanuncios`/`fetch_coches_net` URLs back to
+  nationwide Spain (no `/canarias.htm`, no `/canarias/`), re-verified live via
+  curl before wiring in.
+- `Resources/europe-motorhome-selling-sites.md` — un-superseded, restored as
+  the active portal list; gained a new "New (0km) motorhomes" section
+  (generalized from the Canary file's version) since new-vehicle search is
+  now a permanent feature, not Canary-specific.
+  `Resources/canary-motorhome-selling-sites.md` marked superseded in place,
+  not deleted.
+- `scripts/research-prompt.md` — Europe-wide geography/logistics language
+  restored (buy anywhere in Europe, self-drive + Canary ferry leg only,
+  IVA/IGIC import note). Hard gates, budget, no-body-type-filter,
+  no-invented-scoring, and the new+used search instruction all unchanged.
+- `scripts/weekly-search.sh` — Stage B scratch dir now copies
+  `europe-motorhome-selling-sites.md`. Single 03:00 schedule, watchdog timeout,
+  and the 03:20 Atlantic/Canary session-limit-reset risk are all unchanged.
+- Docs: `CLAUDE.md`, `README.md` updated for consistency.
+- Repo hygiene: deleted two confirmed-stale iCloud conflict copies
+  (`docs/history 2.json`, `scripts/ingest_manual_shortlist 2.py`) after
+  diffing them against their real counterparts (0 unique lines in either) and
+  getting Luis's go-ahead.
+- **Validation**: full test suite passed (including a new test pinning the
+  restored URLs). Ran a real end-to-end pipeline pass (cleared today's
+  `.state` marker first): Stage A harvested 86 candidates total (+8 new that
+  run), spanning mainland Spain (Sevilla, Almería, La Rioja, Ávila, A Coruña,
+  Madrid) plus Canarias — direct evidence the harvester itself is back to
+  nationwide scope, not just Stage B's live search. Stage B's Top 5: 4x
+  España (two in Tenerife, one Tenerife/Gran Canaria stock, one
+  Madrid-with-Lisboa-registration) + 1x Alemania (a Bürstner Lyseo Harmony
+  Line in Friedberg/Hessen, sourced from caraworld.de, with a live
+  German-market price comparison in its own verdict) — the German winner is
+  the clearest evidence Stage B genuinely searched Europe-wide, not just
+  Spain. Stage D published clean: commit `1063937` ("chore: top 5 refresh
+  2026-08-12"), pushed to `origin/main` and confirmed landed. Whole run took
+  ~10 minutes, no FATAL, no watchdog hang. Spot-checked the live dashboard
+  (via playwriter) ~ a few minutes after the push: the Top 5 section
+  rendered all 5 cards correctly, including the Friedberg/Hessen (Germany)
+  card, and the Favoritos section (7 starred listings spanning Fuerteventura,
+  Tenerife, A Coruña, France, and Italy) rendered correctly too — no empty
+  state, no JS error.
+
+**Not part of this change** (explicitly out of scope per the design doc):
+wider Stage B fetch budget, dedicated scrapers for more sources (mobile.de,
+AutoScout24, etc. — still Stage B's live-search job), distance/shipping-cost
+scoring.
 
 ## 2026-07-31 — manual search reports will keep including European finds
 
@@ -297,6 +357,7 @@ Result: total dataset now ~5-6 motorhomes/run (vs. ~3 pre-pivot). Smaller gain t
 - [x] Single canonical location (2026-07-20 consolidation)
 - [x] Rebuilt for Europe-wide brief + Top5/Favorites dashboard (2026-07-26, see below)
 - [x] Refocused to Canary Islands only, new+used, single 03:00 run (2026-07-30, see above)
+- [x] Restored to Europe-wide scope, new+used, single 03:00 run kept (2026-08-11, see above)
 - [ ] Supabase re-provisioned (currently dead; dashboard runs on localStorage fallback)
 - [ ] Wallapop selectors fixed (currently returns 0 candidates — DOM changed)
 - [ ] Phase 2: dedicated Playwright scrapers for Canary Islands sources beyond Milanuncios/Coches.net (Wallapop, Autocasion, AutoScout24 España, new-vehicle dealers)
