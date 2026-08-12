@@ -2,6 +2,82 @@
 
 Last reviewed: 2026-08-13
 
+## 2026-08-13 — Dashboard visual redesign (warm editorial minimalism)
+
+Luis (via `/goal`): "improve the design of the dashboard to make it modern,
+minimalist and slick... you make any choices." Done autonomously, no design
+doc — a styling/markup pass, not a data-model or pipeline change.
+
+**What changed** (`docs/index.html`, `docs/style.css`, `docs/app.js` only —
+`board.py`/`apply_winners.py`/`harvest.py`/`research-prompt.md` untouched):
+- Typography: Fraunces (display serif, via Google Fonts) for headings/prices,
+  IBM Plex Sans for body — replaces system-font stack.
+- Palette: copper/terracotta accent (`--accent`) replaces the old teal;
+  flatter hairline-bordered cards (10px radius, no heavy shadow) replace the
+  old 20px-radius shadow-heavy bubble cards.
+- **Real light AND dark theme**, both intentionally designed
+  (`@media (prefers-color-scheme: dark)`), not left to the browser. Worth
+  knowing for next time: this Chrome profile has `prefers-color-scheme: dark`
+  genuinely true (confirmed via `matchMedia` in a live page eval), and with no
+  `color-scheme` declared, Chrome was silently repainting the old light-only
+  design with its own heuristic — uncontrolled and untested. Declaring
+  `color-scheme: light dark` on `:root` plus a real dark variable set fixes
+  that. **Real bug this caught**: two spots (`.rank-badge`, `.btn-star.active`)
+  used `var(--paper-raised)` for "light text on a colored fill" — correct
+  only in light mode. In dark mode `--paper-raised` itself goes dark, making
+  that text invisible. Fixed with a dedicated `--on-accent` variable that
+  stays light in both themes (text-on-saturated-fill doesn't need to flip).
+- Rank badges (`01`–`05`, only when `listing.rank` is set) overlaid on the
+  photo for Top 5 cards — leans into the board's actual "ranked leaderboard"
+  nature.
+- Empty-photo state (~1 in 5 listings in practice, `docs/listings.json`'s own
+  rank-2 winner included) now shows a bespoke inline-SVG camper silhouette on
+  a subtle diagonal-stripe pattern, replacing the bare 🚐 emoji.
+- Card entrance is staggered per grid via a `--stagger` CSS custom property
+  set from each card's array index (`Array.map`'s free second argument, no
+  call-site changes needed) — respects `prefers-reduced-motion`.
+- No functional/DOM-contract changes: `data-id`, the event-delegation classes
+  (`.btn-star`, `.btn-delete`), and the `img.photo` → `.photo--empty` sibling
+  adjacency the `onerror` fallback depends on are all unchanged.
+
+**Validation**: full pytest (50) + `node --test` (5) suites re-run clean
+(neither touches `docs/`, so this is a sanity check, not real coverage — this
+project has no visual/JS test harness). Real verification was manual: served
+`docs/` locally, drove it with playwriter, checked both forced-light and
+native-dark rendering, scrolled through Top5/Favoritos/History sections,
+confirmed console-clean, checked a 390px mobile viewport. Then pushed and
+re-verified live (zero console errors, screenshot matches local preview).
+
+**Two playwriter gotchas hit and worth remembering:**
+1. **Stale Service Workers survive across projects sharing a port.** A local
+   preview on `localhost:8743` kept rendering a *different* project's cached
+   page (Family_Trip_Japan) even though `curl` correctly saw this project's
+   files — a Service Worker registered by an earlier session's dev server on
+   that same port was still installed for the `localhost:8743` origin and
+   intercepted every browser navigation, regardless of what's actually
+   listening on the port now. `curl` bypasses Service Workers entirely, so it
+   is not a reliable way to confirm what a real browser will render — plain
+   HTTP success there does not mean the browser sees the same thing. Fix used:
+   switch to a fresh, never-used port rather than touch the SW registration.
+   If a future local-preview check ever shows unexplained stale/wrong
+   content, suspect this before suspecting the code.
+2. **`acquirePage` can hand back an unrelated real tab.** A generic
+   `acquirePage({purpose: ...})` call (not reusing the tab this project
+   already owned from a prior verification step) landed on a completely
+   different, real tab of Luis's — his Japan trip planner — and a subsequent
+   `goto()` navigated it away. Recovered with `page.goBack()`, no lasting
+   harm, but the lesson: prefer reusing an already-owned/tracked
+   `state.page` (or navigating a tab whose URL you just confirmed) over
+   calling `acquirePage` again mid-session.
+3. **Local previews are NOT sandboxed from the real backend.** Clicking
+   ★ Favorito during local-preview testing wrote a real star to the actual
+   Supabase project (`docs/config.js`'s credentials aren't origin-restricted)
+   — a real, unintended mutation to Luis's live favorites, caught and
+   reverted immediately (confirmed via reload that the count returned to 5).
+   Do not click any state-mutating button (★, 🗑) during design/preview
+   testing, local or live — verify interactivity structurally (event
+   listeners, DOM classes) instead, never by actually triggering a write.
+
 ## 2026-08-13 — History view dedup + integral-over-perfilada preference
 
 Luis: the History view (dated manual-shortlist sections below Top5/Favoritos)
