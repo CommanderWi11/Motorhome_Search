@@ -523,6 +523,7 @@ Current, authoritative list lives in `CLAUDE.md`'s "The rubric" section (kept in
 ## Open loops
 - GitHub Actions cannot run this pipeline (datacenter IP block) — always runs via local launchd.
 - `scripts/apply_winners.py`/`scripts/board.py` still not audited as thoroughly against the brief as `harvest.py`/`research-prompt.md` (see the 2026-07-26 entry above) — next place to look if a further "old parameters" complaint arises.
+- `harvest.py`'s `fetch_coches_net` location extraction (`CANARY_KEYWORDS`-based) was never generalized for nationwide-Spain scope — flagged in the final review of the 2026-08-11 Europe-wide restore. Measured against that restore's own first live run: 44 of 58 coches.net candidates landed with `location: ""` (mainland cities like Sevilla, A Coruña, Valencia, Asturias, Granada, Madrid all miss the Canary-keyword heuristic), vs. 0 empty for milanuncios. Not a regression from that restore — this is pre-existing code, unchanged since before it, and behaved the same way during the 2026-07-26 Europe-wide period too. Stage B's own detail-page fetch backfills location for winners, so it's masked at the board level, but the raw candidate pool is degraded. Deliberately not fixed as part of that restore (real code change, deserves its own test, and the design spec for that restore explicitly scoped out deeper Stage A engineering work) — worth a small follow-up: fall back to any `(Provincia)`-shaped line in the card text, not just Canary place-names.
 
 ## 2026-07-27 — live 3:25am run + manual-shortlist history view
 
