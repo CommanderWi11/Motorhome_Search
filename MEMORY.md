@@ -360,7 +360,7 @@ Result: total dataset now ~5-6 motorhomes/run (vs. ~3 pre-pivot). Smaller gain t
 - [x] Restored to Europe-wide scope, new+used, single 03:00 run kept (2026-08-11, see above)
 - [ ] Supabase re-provisioned (currently dead; dashboard runs on localStorage fallback)
 - [ ] Wallapop selectors fixed (currently returns 0 candidates — DOM changed)
-- [ ] Phase 2: dedicated Playwright scrapers for Canary Islands sources beyond Milanuncios/Coches.net (Wallapop, Autocasion, AutoScout24 España, new-vehicle dealers)
+- [ ] Phase 2: dedicated Playwright scrapers for more Europe-wide sources beyond Milanuncios/Coches.net (mobile.de, AutoScout24, leboncoin, etc. — still an open backlog item, not part of any completed change)
 
 ## 2026-07-26 rebuild — Europe-wide brief, Top 5 + Favorites, hang fix
 Luis wanted the dashboard redone (simpler, better-looking) and pointed out the real
