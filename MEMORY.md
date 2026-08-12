@@ -1,6 +1,65 @@
 # Motorhome Lifestyle Memory
 
-Last reviewed: 2026-08-11
+Last reviewed: 2026-08-13
+
+## 2026-08-13 — History view dedup + integral-over-perfilada preference
+
+Luis: the History view (dated manual-shortlist sections below Top5/Favoritos)
+was showing the same caravan repeated across every date it was mentioned in —
+up to 13 separate date sections for one listing. Also asked to favor integral
+(Class-A) motorhomes over perfiladas going forward, without skipping a genuinely
+good perfilada deal. Design doc:
+`docs/superpowers/specs/2026-08-12-history-dedup-and-integral-preference-design.md`.
+
+**Why:** the History view's `renderHistory()` had no memory across dated
+snapshots — every date rendered independently, so a vehicle held over unchanged
+across many pasted reports got a fresh card every single time. Confirmed the
+automated Top5+Favorites board (`board.py`) already dedupes correctly and was
+not the problem.
+
+**What changed:**
+- New `docs/history-dedup.js` — a pure function `dedupeHistoryByLatest(snapshots,
+  excludeIds)` that keeps each listing id's entry in only the newest snapshot
+  that mentions it (snapshots are already sorted newest-first by
+  `ingest_manual_shortlist.py`). `docs/history.json` and the ingest script are
+  completely untouched — every dated mention stays in the JSON forever, only
+  what the dashboard *renders* is deduped. `excludeIds` is also seeded with
+  today's Top 5 + Favoritos ids, so a vehicle already shown up top doesn't also
+  get a stale History card.
+- No build tooling introduced: the new file works as a plain global `<script>`
+  in the browser (loaded before `app.js` in `index.html`) AND as a
+  `require()`-able Node module via a UMD-style guard — zero new dependencies.
+  Covered by 5 new tests run via Node's built-in `node:test` runner
+  (`tests/test_history_dedup.js`).
+- `scripts/research-prompt.md` gained a new "Carrocería integral (Clase A)
+  preferida sobre perfilada" bullet in Preferencias fuertes, plus a mention in
+  the ranking-comparison list so it's actually applied, not just stated once.
+  Explicitly a soft tiebreaker, not a filter — a standout perfilada deal wins
+  exactly as before. `CLAUDE.md`'s rubric section got a synced clarifying note.
+- **Real impact, measured against live `history.json`**: 15 dated sections
+  collapsed to 7, and 79 entry cards collapsed to 28 — bigger than "one listing
+  now shows once" might suggest, since several dates were entirely superseded
+  by newer ones. Matches the approved design exactly (a date left with zero
+  surviving entries after dedup disappears from the page), just a larger real
+  effect than the ticket framing implied — flagged to Luis after deploy.
+- **Validation**: 5/5 new JS tests + 50/50 existing pytest suite passed at every
+  checkpoint. Pushed to `origin/main` and verified live via a real browser
+  (playwriter): a listing previously repeated across 13 dates
+  (`2dehands_be-f9438584`) now renders exactly once, under its latest date;
+  `history.json` confirmed to still contain all 13 original mentions (data
+  untouched). The integral preference will take effect on the next real Stage B
+  run (tonight's 03:00 job) — not forced as part of this change.
+- **Lesson for future `docs/` script-splitting**: right after this push, a
+  browser with a cached `index.html` (GitHub Pages serves it with
+  `cache-control: max-age=600`) paired with a freshly-fetched `app.js` would hit
+  `ReferenceError: dedupeHistoryByLatest is not defined` inside `render()` and
+  get stuck on "Cargando…" — because the cached HTML lacked the new
+  `history-dedup.js` `<script>` tag. Resolved itself within ~10 minutes as caches
+  expired, and doesn't apply retroactively to this change, but any future commit
+  that adds a new `<script>` tag to `docs/index.html` has the same ≤10-minute
+  mixed-version window. Not worth a defensive `typeof` guard for a single-user
+  dashboard, but worth remembering if a "blank page right after deploy" report
+  ever comes in.
 
 ## 2026-08-11 — Europe-wide search scope restored
 
