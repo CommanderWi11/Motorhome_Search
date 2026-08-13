@@ -2,6 +2,42 @@
 
 Last reviewed: 2026-08-13
 
+## 2026-08-13 — Manual snapshots moved to their own page ("Añadidos a mano")
+
+Luis: move the "Búsquedas manuales" section off the main dashboard onto a
+separate page, linked via a clickable tab, renamed. Confirmed choices:
+**same-tab navigation** (normal link, not target=_blank) and the **Spanish
+label "Añadidos a mano"**.
+
+- `docs/manual.html` + `docs/manual.js` — the relocated history view (dated
+  sections, dedup-by-latest, same exclusion semantics: hidden/starred/today's
+  Top 5 ids don't show). Header pill-link on each page navigates to the other.
+- `docs/shared.js` — common plumbing split out of `app.js` (state loading,
+  `renderCard`, CAMPER_ICON, star/discard handlers, `escapeHtml`,
+  `formatDateEs`, `allKnownEntries`). Contract: each page defines its own
+  global `render()`; shared handlers call it. `app.js` is now Top 5 +
+  Favoritos only; `history-dedup.js` is loaded only by manual.html.
+- **Pages-cache mitigation**: new `index.html` references `app.js?v=2` /
+  `style.css?v=2` so a stale cached `app.js` (whose top-level `let`s would
+  collide with `shared.js`'s and throw a SyntaxError) can never pair with the
+  new HTML during the ~10min cache window. Keep bumping `?v=` if the
+  shared/page script split ever changes shape again.
+- Verified locally on a fresh port (8961 — see Service-Worker gotcha below)
+  via playwriter: both pages render, link round-trip works, zero console
+  errors; then pushed (`430bdd4`) and re-verified live. No data files touched.
+
+## 2026-08-13 — Separate-bath/shower preference removed from Stage B
+
+Luis: "remove the separate bathroom and shower preference from the search
+query". Done in `scripts/research-prompt.md` (strong-preference bullet,
+ranking-list mention, and the per-language search-term row all removed) +
+`CLAUDE.md` rubric summary. `specs.bathroom_type` **stays in the output
+contract as pure data** — nothing downstream validates it, but winners keep
+recording it; it just never scores. Commit `f7e3ff5`; a forced same-day re-run
+(delete `.state/<today>.done`, `launchctl kickstart`) published the first
+board under the new rubric — Etrusco 7400SB still #1, Laika Kosmo 209 and a
+new-vehicle Giottiline Siena 385 entered, LMC V643G dropped out.
+
 ## 2026-08-13 — Dashboard visual redesign (warm editorial minimalism)
 
 Luis (via `/goal`): "improve the design of the dashboard to make it modern,
