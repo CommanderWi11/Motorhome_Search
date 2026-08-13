@@ -124,8 +124,10 @@ searched extensively** — this started as a Canary-only-detour addition
 licence), **length ≥ 6.90 m** (⚠️ do not revert to the old ≤7m preference, that
 number was never re-requested), twin rear beds convertible to a double via a
 factory infill kit, **left-hand drive**, ≥4 forward-facing 3-point-belt travel
-seats. Bathroom (separate preferred) and a 4th/5th child berth remain strong
-preferences, not hard gates. Logistics note: pan-European self-drive/ferry
+seats. A 4th/5th child berth remains a strong preference, not a hard gate.
+Bathroom is neither: the separate-bath/shower preference was removed at Luis's
+request 2026-08-13 (`specs.bathroom_type` is still recorded as data, just never
+scored). Logistics note: pan-European self-drive/ferry
 framing is back — buy anywhere in Europe, self-drive it back, ferry only the
 Canary leg (no distance/shipping-cost penalty by country) — and IVA/IGIC import
 notes replace the local-IGIC-only note from the Canary detour.
